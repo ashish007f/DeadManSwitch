@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dead-Man Check-In</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .user-info {
+            text-align: right;
+        }
+
+        .user-name {
+            color: #666;
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+
+        #logoutBtn {
+            background: none;
+            color: #667eea;
+            text-decoration: underline;
+            border: none;
+            padding: 0;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        #logoutBtn:hover {
+            color: #5568d3;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #999;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .status-box {
+            background: #f5f5f5;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        .status-badge.safe {
+            background: #10b981;
+            color: white;
+        }
+
+        .status-badge.due-soon {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .status-badge.missed {
+            background: #ef4444;
+            color: white;
+        }
+
+        .status-badge.grace-period {
+            background: #ef4444;
+            color: white;
+        }
+
+        .status-badge.notified {
+            background: #dc2626;
+            color: white;
+        }
+
+        .status-info {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            font-weight: 500;
+            color: #333;
+        }
+
+        .info-value {
+            color: #999;
+        }
+
+        .button-group {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+            margin-bottom: 25px;
+        }
+
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-checkin {
+            background: #667eea;
+            color: white;
+            font-size: 16px;
+            padding: 14px;
+        }
+
+        .btn-checkin:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-settings {
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        .btn-settings:hover {
+            background: #e5e5e5;
+        }
+
+        .settings-panel {
+            background: #f9f9f9;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .settings-panel.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            color: #333;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 14px;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .button-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .btn-small {
+            padding: 10px 16px;
+            font-size: 13px;
+        }
+
+        .btn-save {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-save:hover {
+            background: #059669;
+        }
+
+        .btn-cancel {
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        .btn-cancel:hover {
+            background: #e5e5e5;
+        }
+
+        .message {
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .message.show {
+            display: block;
+        }
+
+        .message.success {
+            background: #d1fae5;
+            color: #065f46;
+            border-left: 4px solid #10b981;
+        }
+
+        .message.error {
+            background: #fee2e2;
+            color: #7f1d1d;
+            border-left: 4px solid #ef4444;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>✓ Dead-Man Check-In</h1>
+            <div class="user-info">
+                <div class="user-name" id="userDisplay"></div>
+                <button id="logoutBtn">Logout</button>
+            </div>
+        </div>
+        <p class="subtitle">Stay connected. Stay safe.</p>
+
+        <div id="message" class="message"></div>
+
+        <div class="status-box">
+            <div class="status-badge" id="statusBadge">--</div>
+            <div class="status-info">
+                <div class="info-row">
+                    <span class="info-label">Status</span>
+                    <span class="info-value" id="statusText">Loading...</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Last Check-In</span>
+                    <span class="info-value" id="lastCheckin">Never</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Hours Until Due</span>
+                    <span class="info-value" id="hoursDue">--</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Interval</span>
+                    <span class="info-value" id="interval">--h</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="button-group">
+            <button class="btn-checkin" id="checkinBtn">📍 Check In Now</button>
+            <button class="btn-settings" id="settingsBtn">⚙️ Settings</button>
+        </div>
+
+        <div class="settings-panel" id="settingsPanel">
+            <h3 style="margin-bottom: 15px; color: #333;">Settings</h3>
+
+            <div class="form-group">
+                <label for="displayNameInput">Display Name</label>
+                <input type="text" id="displayNameInput" placeholder="Your name">
+            </div>
+
+            <div class="form-group">
+                <label for="intervalInput">Check-In Interval (hours)</label>
+                <input type="number" id="intervalInput" min="1" max="720" value="48">
+            </div>
+
+            <div class="form-group">
+                <label for="missedBufferInput">Missed Buffer (hours)</label>
+                <input type="number" id="missedBufferInput" min="0" max="168" value="1">
+            </div>
+
+            <div class="form-group">
+                <label for="gracePeriodInput">Grace Period (hours)</label>
+                <input type="number" id="gracePeriodInput" min="0" max="720" value="24">
+            </div>
+
+            <div class="form-group">
+                <label for="contactsInput">Trusted Contacts (comma-separated emails)</label>
+                <input type="text" id="contactsInput" placeholder="alice@example.com, bob@example.com">
+            </div>
+
+            <div class="form-group">
+                <label for="instructionsInput">Instructions for Trusted Contacts</label>
+                <textarea id="instructionsInput" placeholder="Add any instructions or messages here..."></textarea>
+            </div>
+
+            <div class="button-row">
+                <button class="btn-save btn-small" id="saveBtn">Save</button>
+                <button class="btn-cancel btn-small" id="cancelBtn">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/api';
+        let isLoggingOut = false; 
+        let statusInterval = null;
+
+        const state = {
+            statusBadge: document.getElementById('statusBadge'),
+            statusText: document.getElementById('statusText'),
+            lastCheckin: document.getElementById('lastCheckin'),
+            hoursDue: document.getElementById('hoursDue'),
+            interval: document.getElementById('interval'),
+            message: document.getElementById('message'),
+            checkinBtn: document.getElementById('checkinBtn'),
+            settingsBtn: document.getElementById('settingsBtn'),
+            settingsPanel: document.getElementById('settingsPanel'),
+            saveBtn: document.getElementById('saveBtn'),
+            cancelBtn: document.getElementById('cancelBtn'),
+            displayNameInput: document.getElementById('displayNameInput'),
+            intervalInput: document.getElementById('intervalInput'),
+            missedBufferInput: document.getElementById('missedBufferInput'),
+            gracePeriodInput: document.getElementById('gracePeriodInput'),
+            contactsInput: document.getElementById('contactsInput'),
+            instructionsInput: document.getElementById('instructionsInput'),
+            userDisplay: document.getElementById('userDisplay'),
+            logoutBtn: document.getElementById('logoutBtn'),
+        };
+
+        let currentPhone = null;
+
+        function formatDate(isoDate) {
+            if (!isoDate) return 'Never';
+            const date = new Date(isoDate);
+            const datePart = date.toLocaleDateString(undefined, { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' });
+            const timePart = date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+            return `${datePart} ${timePart}`;
+        }
+
+        function formatHours(hours) {
+            if (hours < 0) return `${Math.abs(hours).toFixed(1)}h OVERDUE`;
+            return `${hours.toFixed(1)}h`;
+        }
+
+        function updateStatusDisplay(data) {
+            state.statusText.textContent = data.status;
+            state.lastCheckin.textContent = formatDate(data.last_checkin);
+            state.hoursDue.textContent = formatHours(data.hours_until_due);
+            state.interval.textContent = `${data.interval_hours}h`;
+
+            const badge = state.statusBadge;
+            badge.textContent = data.status;
+            badge.className = 'status-badge ' + data.status.toLowerCase().replace('_', '-');
+        }
+
+        async function fetchStatus() {
+            try {
+                const res = await fetch(`${API_BASE}/status`, { credentials: 'include' });
+                const data = await res.json();
+                updateStatusDisplay(data);
+            } catch (err) {
+                console.error('Failed to fetch status:', err);
+            }
+        }
+
+        async function handleCheckin() {
+            state.checkinBtn.disabled = true;
+            state.checkinBtn.innerHTML = '<span class="spinner"></span>Checking In...';
+
+            try {
+                const res = await fetch(`${API_BASE}/checkin`, { method: 'POST', credentials: 'include' });
+                const data = await res.json();
+                showMessage('✓ Check-in recorded!', 'success');
+                updateStatusDisplay({
+                    status: data.status,
+                    last_checkin: data.timestamp,
+                    hours_until_due: data.hours_until_due,
+                    interval_hours: state.intervalInput.value,
+                });
+            } catch (err) {
+                showMessage('✗ Check-in failed', 'error');
+                console.error(err);
+            } finally {
+                state.checkinBtn.disabled = false;
+                state.checkinBtn.innerHTML = '📍 Check In Now';
+            }
+        }
+
+        async function loadSettings() {
+            try {
+                const resSettings = await fetch(`${API_BASE}/settings`, { credentials: 'include' });
+                if (!resSettings.ok) throw new Error(`Settings fetch failed: ${resSettings.status}`);
+                const settingsData = await resSettings.json();
+                state.intervalInput.value = settingsData.checkin_interval_hours;
+                state.missedBufferInput.value = settingsData.missed_buffer_hours ?? 1;
+                state.gracePeriodInput.value = settingsData.grace_period_hours ?? 24;
+                state.contactsInput.value = (settingsData.contacts || []).join(', ');
+
+                const resInstructions = await fetch(`${API_BASE}/instructions`, { credentials: 'include' });
+                if (!resInstructions.ok) throw new Error(`Instructions fetch failed: ${resInstructions.status}`);
+                const instructionsData = await resInstructions.json();
+                state.instructionsInput.value = instructionsData.content || '';
+            } catch (err) {
+                console.error('Failed to load settings:', err);
+                showMessage('Failed to load settings. Please try again.', 'error');
+            }
+        }
+
+        async function saveSettings() {
+            state.saveBtn.disabled = true;
+            state.saveBtn.innerHTML = '<span class="spinner"></span>Saving...';
+
+            try {
+                const contacts = state.contactsInput.value
+                    .split(',')
+                    .map(s => s.trim())
+                    .filter(Boolean);
+
+                const intervalRes = await fetch(`${API_BASE}/settings`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        checkin_interval_hours: parseInt(state.intervalInput.value),
+                        missed_buffer_hours: parseInt(state.missedBufferInput.value),
+                        grace_period_hours: parseInt(state.gracePeriodInput.value),
+                        contacts: contacts,
+                    }),
+                });
+
+                const instructionsRes = await fetch(`${API_BASE}/instructions`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ content: state.instructionsInput.value }),
+                });
+
+                // Save display name if changed
+                const displayName = state.displayNameInput.value.trim();
+                if (displayName) {
+                    await fetch(`${API_BASE}/auth/update-display-name`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ display_name: displayName }),
+                    });
+                }
+
+                if (intervalRes.ok && instructionsRes.ok) {
+                    showMessage('✓ Settings saved!', 'success');
+                    state.settingsPanel.classList.remove('active');
+                    await fetchStatus();
+                    await loadMe();
+                } else {
+                    throw new Error('Save failed');
+                }
+            } catch (err) {
+                showMessage('✗ Failed to save settings', 'error');
+                console.error(err);
+            } finally {
+                state.saveBtn.disabled = false;
+                state.saveBtn.innerHTML = 'Save';
+            }
+        }
+
+        function showMessage(text, type) {
+            state.message.textContent = text;
+            state.message.className = `message show ${type}`;
+            setTimeout(() => state.message.classList.remove('show'), 3000);
+        }
+
+        function toggleSettings() {
+            if (state.settingsPanel.classList.contains('active')) {
+                state.settingsPanel.classList.remove('active');
+            } else {
+                loadSettings();
+                state.settingsPanel.classList.add('active');
+            }
+        }
+
+async function handleLogout() {
+    isLoggingOut = true; // LOCK: prevents loadMe from redirecting
+    clearInterval(statusInterval); // STOP: prevents further status fetches during logout
+
+    try {
+        await fetch(`${API_BASE}/auth/logout`, { method: 'POST', credentials: 'include' });
+        window.location.replace('/'); 
+    } catch (err) {
+        window.location.replace('/');
+    }
+}
+
+async function loadMe() {
+    if (isLoggingOut) return; // EXIT IMMEDIATELY if we are logging out
+
+    try {
+        const res = await fetch(`${API_BASE}/me`, { credentials: 'include' });
+        if (!res.ok) {
+            // Only redirect if we aren't already in the middle of a logout
+            if (!isLoggingOut) {
+                window.location.href = '/';
+            }
+            return;
+        }
+        const data = await res.json();
+        currentPhone = data.phone;
+        const displayName = data.display_name || data.phone;
+        state.userDisplay.textContent = displayName;
+        state.displayNameInput.value = displayName;
+    } catch (err) {
+        console.error('Failed to load user:', err);
+        if (!isLoggingOut) window.location.href = '/';
+    }
+}
+
+        // Event listeners
+        state.checkinBtn.addEventListener('click', handleCheckin);
+        state.settingsBtn.addEventListener('click', toggleSettings);
+        state.saveBtn.addEventListener('click', saveSettings);
+        state.cancelBtn.addEventListener('click', () => {
+            state.settingsPanel.classList.remove('active');
+        });
+        state.logoutBtn.addEventListener('click', handleLogout);
+
+        // Initial load
+        loadMe();
+        fetchStatus();
+        statusInterval = setInterval(fetchStatus, 5000);
+    </script>
+</body>
+</html>
