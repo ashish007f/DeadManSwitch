@@ -9,6 +9,7 @@ A minimal, extensible Python application that tracks periodic check-ins and eval
 Dead-Man Switch monitors your well-being through periodic check-ins. If you miss a check-in, the system escalates status from **SAFE** → **DUE_SOON** → **MISSED**, allowing trusted contacts to be notified (future feature).
 
 **Core Capabilities:**
+
 - ✓ Record check-ins with a single click
 - ✓ Automatic status evaluation (SAFE / DUE_SOON / MISSED)
 - ✓ Configurable check-in intervals
@@ -20,6 +21,7 @@ Dead-Man Switch monitors your well-being through periodic check-ins. If you miss
 ## Quick Start
 
 ### Prerequisites
+
 - Python 3.11+
 - `uv` package manager
 
@@ -40,11 +42,13 @@ uv run uvicorn app.main:app --reload
 ### Usage
 
 Open your browser:
+
 ```
 http://localhost:8000
 ```
 
 **Dashboard Features:**
+
 - 📍 Check In Now button
 - 📊 Current status display (SAFE/DUE_SOON/MISSED)
 - ⏱ Hours until next check-in
@@ -53,14 +57,16 @@ http://localhost:8000
 
 ### API Endpoints
 
-| Method | Endpoint | Purpose |
-|--------|----------|---------|
-| `POST` | `/api/checkin` | Record a check-in |
-| `GET` | `/api/status` | Get current status |
-| `GET` | `/api/settings` | Get check-in interval |
-| `POST` | `/api/settings` | Update check-in interval |
-| `GET` | `/api/instructions` | Get trusted contact instructions |
-| `POST` | `/api/instructions` | Save instructions |
+
+| Method | Endpoint            | Purpose                          |
+| ------ | ------------------- | -------------------------------- |
+| `POST` | `/api/checkin`      | Record a check-in                |
+| `GET`  | `/api/status`       | Get current status               |
+| `GET`  | `/api/settings`     | Get check-in interval            |
+| `POST` | `/api/settings`     | Update check-in interval         |
+| `GET`  | `/api/instructions` | Get trusted contact instructions |
+| `POST` | `/api/instructions` | Save instructions                |
+
 
 ### Example API Calls
 
@@ -87,11 +93,13 @@ curl -X POST http://localhost:8000/api/instructions \
 **Location:** `./checkin.db` (SQLite)
 
 **Tables:**
+
 - `checkins` — Records each check-in timestamp
 - `settings` — Application configuration (interval hours)
 - `instructions` — Instructions for trusted contacts
 
 **Query with SQLite CLI:**
+
 ```bash
 sqlite3 checkin.db
 sqlite> SELECT * FROM checkins;
@@ -103,6 +111,7 @@ sqlite> SELECT * FROM settings;
 See [ARCHITECTURE.md](ARCHITECTURE.md) for detailed design decisions, layering strategy, and extensibility patterns.
 
 **Quick Overview:**
+
 ```
 FastAPI Routes
      ↓
@@ -126,8 +135,10 @@ app/
 ├── api/
 │   └── routes.py          # HTTP endpoints
 ├── services/
+│   └── auth_service.py # Business logic orchestration
 │   └── checkin_service.py # Business logic orchestration
 ├── repositories/
+│   └── auth_repo.py       # Data access layer
 │   └── checkin_repo.py    # Data access layer
 ├── domain/
 │   ├── models.py          # Pydantic DTOs
@@ -147,46 +158,27 @@ app/
 uv run python test_routes.py
 ```
 
-### Database Queries
-
-#### Via Python
-```python
-from app.db.database import SessionLocal
-from app.repositories.checkin_repo import CheckInRepository
-
-db = SessionLocal()
-repo = CheckInRepository(db)
-last_checkin = repo.get_last_checkin()
-db.close()
-```
-
-#### Via Service
-```python
-from app.services.checkin_service import CheckInService
-
-service = CheckInService(db)
-status = service.get_status()
-```
-
 ## Future Roadmap
 
 **Phase 1 (Done):**
+
 - ✓ Local check-in tracking
 - ✓ Status calculation
 - ✓ Minimal UI dashboard
 - ✓ Clean API
+- ✓ basic user authentication
 
-**Phase 2 (Planned):**
-- [ ] Notification adapters (email, SMS, WhatsApp)
-- [ ] User authentication
-- [ ] Multi-user support
-- [ ] Cloud deployment (AWS Lambda, Vercel)
+**Phase 2 (Future):**
 
-**Phase 3 (Future):**
-- [ ] Mobile app (React Native)
-- [ ] Encryption layer
-- [ ] Historical analytics
-- [ ] Emergency contact management
+- Mobile app (React Native)
+- Notification adapters (SMS, WhatsApp)
+- Emergency contact management
+
+**Phase 3 (Planned):**
+
+- User authentication
+- Encryption layer
+- Cloud deployment (AWS Lambda, Vercel)
 
 ## Configuration
 
@@ -199,19 +191,22 @@ CHECK_INTERVAL_MINUTES=1
 ```
 
 **Defaults:**
+
 - Check interval: 1 minute (for monitoring)
 - Database: SQLite at `./checkin.db`
 
 ## Dependencies
 
-| Package | Purpose |
-|---------|---------|
-| `fastapi` | Web framework |
-| `uvicorn` | ASGI server |
-| `sqlalchemy` | ORM |
-| `pydantic` | Data validation |
+
+| Package       | Purpose              |
+| ------------- | -------------------- |
+| `fastapi`     | Web framework        |
+| `uvicorn`     | ASGI server          |
+| `sqlalchemy`  | ORM                  |
+| `pydantic`    | Data validation      |
 | `apscheduler` | Background scheduler |
-| `jinja2` | Template rendering |
+| `jinja2`      | Template rendering   |
+
 
 See `pyproject.toml` for versions.
 

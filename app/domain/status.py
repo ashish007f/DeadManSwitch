@@ -21,7 +21,7 @@ def compute_status(
     last_checkin: datetime | None,
     interval_hours: int,
     missed_buffer_hours: int = 1,
-    grace_period_hours: int = 72,
+    grace_period_hours: int = 24,
 ) -> CheckInStatus:
     """
     Compute check-in status based on last check-in time and interval.

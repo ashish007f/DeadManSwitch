@@ -7,13 +7,20 @@ Designed for future notification adapters.
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.schedulers.base import SchedulerAlreadyRunningError
-from sqlalchemy.orm import Session
 from datetime import datetime
 from typing import Optional
 
 from app.db.database import SessionLocal
 from app.services.checkin_service import CheckInService
 from app.domain.status import CheckInStatus
+from app.db.schema import User
+from app.repositories.notification_repo import NotificationLogRepository
+from app.notifications.adapters.console import ConsoleNotificationAdapter
+from app.notifications.models import (
+    NotificationMessage,
+    NotificationRecipient,
+    StatusChangeEvent,
+)
 
 
 class CheckInScheduler:
@@ -22,7 +29,13 @@ class CheckInScheduler:
     def __init__(self, check_interval_minutes: int = 1):
         self.scheduler = BackgroundScheduler()
         self.check_interval_minutes = check_interval_minutes
-        self._last_status: Optional[CheckInStatus] = None
+        self._last_status_by_user: dict[int, CheckInStatus] = {}
+        # Phase 2: pluggable adapter registry (currently console for all channels)
+        self._adapter_by_channel = {
+            "email": ConsoleNotificationAdapter(),
+            "sms": ConsoleNotificationAdapter(),
+            "whatsapp": ConsoleNotificationAdapter(),
+        }
     
     def start(self):
         """Start the background scheduler"""
@@ -50,56 +63,132 @@ class CheckInScheduler:
         db = SessionLocal()
         try:
             service = CheckInService(db)
-            current_status = service.compute_current_status()
-            
-            # Log status change
-            if current_status != self._last_status:
-                timestamp = datetime.utcnow().isoformat()
-                print(f"[{timestamp}] Status changed: {self._last_status} → {current_status}")
-                self._last_status = current_status
-                
-                # If we enter NOTIFIED state, trigger notification adapters
-                if current_status == CheckInStatus.NOTIFIED:
-                    try:
-                        self._notify_status_change(current_status)
-                    except Exception as e:
-                        print(f"⚠ Notification hook error: {e}")
+            notif_repo = NotificationLogRepository(db)
+
+            users: list[User] = db.query(User).all()
+            for user in users:
+                phone = user.phone_number
+                status_resp = service.get_status(phone=phone)
+                current_status = status_resp.status
+
+                prev_status = self._last_status_by_user.get(user.id)
+                if prev_status != current_status:
+                    timestamp = datetime.utcnow().isoformat()
+                    print(f"[{timestamp}] [{phone}] Status changed: {prev_status} → {current_status}")
+                    self._last_status_by_user[user.id] = current_status
+
+                # Two-tier notifications per missed cycle (keyed by last_checkin timestamp):
+                # 1. GRACE_PERIOD: simple "please check on this person" (no sensitive info)
+                # 2. NOTIFIED: full message with instructions (sensitive info for family)
+                if status_resp.last_checkin is None:
+                    continue
+
+                for notify_status in (CheckInStatus.GRACE_PERIOD, CheckInStatus.NOTIFIED):
+                    if current_status != notify_status:
+                        continue
+                    already_sent = notif_repo.has_sent(
+                        user_id=user.id,
+                        last_checkin_at=status_resp.last_checkin,
+                        status=notify_status.value,
+                    )
+                    if not already_sent:
+                        try:
+                            self._notify_user(
+                                service=service,
+                                phone=phone,
+                                status=notify_status,
+                                last_checkin_at=status_resp.last_checkin,
+                            )
+                            notif_repo.record_sent(
+                                user_id=user.id,
+                                last_checkin_at=status_resp.last_checkin,
+                                status=notify_status.value,
+                            )
+                        except Exception as e:
+                            print(f"⚠ Notification error for {phone}: {e}")
             
         except Exception as e:
             print(f"⚠ Scheduler error: {e}")
         finally:
             db.close()
     
-    def _notify_status_change(self, status: CheckInStatus):
-        """
-        Hook for future notification adapters.
-        
-        Example extensibility:
-        - EmailNotifier.send(status)
-        - WhatsAppNotifier.send(status)
-        - SlackNotifier.send(status)
-        """
-        # Minimal notifier: read settings + instructions and print intended notifications.
-        db = SessionLocal()
-        try:
-            service = CheckInService(db)
-            settings = service.get_settings()
-            instructions = service.get_instructions()
+    def _notify_user(
+        self,
+        *,
+        service: CheckInService,
+        phone: str,
+        status: CheckInStatus,
+        last_checkin_at: datetime,
+    ) -> None:
+        settings = service.get_settings(phone=phone)
+        instructions = service.get_instructions(phone=phone)
 
-            contacts = settings.contacts or []
-            print(f"🔔 Notifying {len(contacts)} contacts about status {status}")
-            for c in contacts:
-                print(f" - Would notify: {c}")
+        recipients: list[NotificationRecipient] = []
 
-            if instructions.content:
-                print("📄 Instructions to send:")
-                print(instructions.content)
+        # Contacts live in settings.contacts as simple strings
+        for addr in settings.contacts or []:
+            recipients.append(NotificationRecipient(channel="email", address=addr))
 
-            # Real implementations would call external adapters here.
-        except Exception as e:
-            print(f"⚠ Failed to run notifier: {e}")
-        finally:
-            db.close()
+        # De-dupe recipients by (channel,address)
+        deduped: list[NotificationRecipient] = []
+        seen: set[tuple[str, str]] = set()
+        for r in recipients:
+            key = (r.channel, r.address)
+            if key in seen:
+                continue
+            seen.add(key)
+            deduped.append(r)
+
+        event = StatusChangeEvent(
+            user_phone=phone,
+            new_status=status,
+            last_checkin_at=last_checkin_at,
+            created_at=datetime.utcnow(),
+            instructions=instructions.content,
+        )
+
+        if status == CheckInStatus.GRACE_PERIOD:
+            # First notification: simple "please check on this person" — no sensitive info
+            message = NotificationMessage(
+                subject="Please check on this person — missed check-in",
+                body="\n".join(
+                    [
+                        "Dead-Man Switch — Check-in reminder",
+                        "",
+                        f"The person associated with {phone} has not checked in within their expected interval.",
+                        "",
+                        "Please call or check on them to ensure they are okay.",
+                        "",
+                        f"Last check-in (UTC): {last_checkin_at.isoformat()}",
+                    ]
+                ),
+            )
+        else:
+            # Second notification (NOTIFIED): full message with instructions — sensitive info
+            message = NotificationMessage(
+                subject="Dead-Man Switch — Important: instructions and sensitive information",
+                body="\n".join(
+                    [
+                        "Dead-Man Switch — Instructions for trusted contacts",
+                        "",
+                        f"The person associated with {phone} has not checked in for an extended period.",
+                        "The following information was provided for use by family members.",
+                        "",
+                        "--- Instructions and sensitive information ---",
+                        "",
+                        (instructions.content or "(No instructions provided)"),
+                        "",
+                        "---",
+                        "",
+                        f"Last check-in (UTC): {last_checkin_at.isoformat()}",
+                    ]
+                ),
+            )
+
+        print(f"🔔 Notifying {len(deduped)} recipients for {phone} (status={status})")
+        for r in deduped:
+            adapter = self._adapter_by_channel.get(r.channel, ConsoleNotificationAdapter())
+            adapter.send(recipient=r, message=message, event=event)
 
 
 # Global scheduler instance

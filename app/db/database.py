@@ -9,8 +9,10 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 from typing import Generator
 
-# Default SQLite URL - can be overridden via environment
-DATABASE_URL = "sqlite:///./checkin.db"
+from app.config import settings
+
+# Database URL from environment/config
+DATABASE_URL = settings.database_url
 
 # Create engine with appropriate settings
 engine = create_engine(

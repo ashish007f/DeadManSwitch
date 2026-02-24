@@ -4,7 +4,7 @@ SQLAlchemy ORM schema definitions.
 Minimal schema focused on core functionality.
 """
 
-from sqlalchemy import Column, Integer, DateTime, String, Text, ForeignKey
+from sqlalchemy import Column, Integer, DateTime, String, Text, ForeignKey, Index
 from sqlalchemy.ext.declarative import declarative_base
 from datetime import datetime
 
@@ -66,6 +66,24 @@ class User(Base):
     phone_number = Column(String(20), unique=True, nullable=False)
     display_name = Column(String(256), nullable=True)
     verified = Column(Integer, default=0)  # 0=unverified, 1=verified
+
+
+class NotificationLog(Base):
+    """Tracks sent notifications to prevent duplicate sends per missed-cycle."""
+    __tablename__ = "notification_logs"
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+
+    # The last check-in timestamp that this notification corresponds to.
+    # If the user checks in again, last_checkin_at changes and we can notify again if needed.
+    last_checkin_at = Column(DateTime, nullable=False)
+    status = Column(String(32), nullable=False)  # e.g. NOTIFIED
+
+    notified_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+Index("ix_notification_logs_user_checkin_status", NotificationLog.user_id, NotificationLog.last_checkin_at, NotificationLog.status)
 
 
 def init_db():

@@ -221,6 +221,14 @@
             min-height: 100px;
         }
 
+        .form-hint {
+            display: block;
+            margin-top: 6px;
+            font-size: 12px;
+            color: #666;
+            line-height: 1.4;
+        }
+
         .button-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -351,16 +359,17 @@
             <div class="form-group">
                 <label for="gracePeriodInput">Grace Period (hours)</label>
                 <input type="number" id="gracePeriodInput" min="0" max="720" value="24">
+                <small class="form-hint">After interval + buffer, contacts get a simple "please check on this person" alert. After grace period ends, they receive your instructions below.</small>
             </div>
 
             <div class="form-group">
-                <label for="contactsInput">Trusted Contacts (comma-separated emails)</label>
-                <input type="text" id="contactsInput" placeholder="alice@example.com, bob@example.com">
+                <label for="contactsInput">Trusted Contacts (comma-separated emails or phone numbers)</label>
+                <input type="text" id="contactsInput" placeholder="alice@example.com, +1-555-123-4567">
             </div>
 
             <div class="form-group">
-                <label for="instructionsInput">Instructions for Trusted Contacts</label>
-                <textarea id="instructionsInput" placeholder="Add any instructions or messages here..."></textarea>
+                <label for="instructionsInput">Instructions for Trusted Contacts (sensitive info)</label>
+                <textarea id="instructionsInput" placeholder="Bank accounts, investments, properties, how to reach them, etc. — sent only after grace period expires."></textarea>
             </div>
 
             <div class="button-row">

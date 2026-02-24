@@ -12,7 +12,6 @@ from sqlalchemy.orm import Session
 from app.db.database import get_db
 from app.services.checkin_service import CheckInService
 from app.services.auth_service import AuthService
-from app.repositories.auth_repo import AuthRepository
 from app.domain.models import (
     CheckInRequest,
     CheckInResponse,
@@ -259,4 +258,5 @@ async def whoami(
             pass
         raise HTTPException(status_code=401, detail="user not found")
     return user
+
 

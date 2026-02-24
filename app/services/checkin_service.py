@@ -52,6 +52,8 @@ class CheckInService:
         status = self.compute_current_status(phone=phone)
 
         settings = self.settings_repo.get_or_create(phone)
+        if not settings:
+            raise ValueError(f"User not found: {phone}")
         missed_buffer = getattr(settings, "missed_buffer_hours", 1)
         grace_period = getattr(settings, "grace_period_hours", 24)
 
@@ -217,6 +219,8 @@ class CheckInService:
         if not phone:
             raise ValueError("Phone number is required to get instructions")
         instructions = self.instructions_repo.get_or_create_instructions(phone)
+        if not instructions:
+            raise ValueError(f"User not found: {phone}")
         return InstructionsResponse(
             content=instructions.content,
             updated_at=instructions.updated_at,

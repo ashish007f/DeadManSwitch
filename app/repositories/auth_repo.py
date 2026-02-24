@@ -49,7 +49,7 @@ class AuthRepository:
         self.db.query(OTP).filter(
             OTP.phone_number == phone,
             OTP.verified == 0
-        ).delete()
+        ).delete(synchronize_session=False) 
         
         otp = OTP(phone_number=phone, code=code, expires_at=expires_at)
         self.db.add(otp)
