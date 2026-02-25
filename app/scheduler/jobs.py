@@ -26,9 +26,9 @@ from app.notifications.models import (
 class CheckInScheduler:
     """Background scheduler for check-in status monitoring"""
     
-    def __init__(self, check_interval_minutes: int = 1):
+    def __init__(self, check_interval_hrs: float = 1):
         self.scheduler = BackgroundScheduler()
-        self.check_interval_minutes = check_interval_minutes
+        self.check_interval_hours = check_interval_hrs
         self._last_status_by_user: dict[int, CheckInStatus] = {}
         # Phase 2: pluggable adapter registry (currently console for all channels)
         self._adapter_by_channel = {
@@ -43,12 +43,12 @@ class CheckInScheduler:
             self.scheduler.add_job(
                 self._check_status,
                 "interval",
-                minutes=self.check_interval_minutes,
+                hours=self.check_interval_hours,
                 id="check_checkin_status",
                 replace_existing=True,
             )
             self.scheduler.start()
-            print(f"✓ Scheduler started (checks every {self.check_interval_minutes} minute(s))")
+            print(f"✓ Scheduler started (checks every {self.check_interval_hours} hour(s))")
         except SchedulerAlreadyRunningError:
             print("⚠ Scheduler already running")
     

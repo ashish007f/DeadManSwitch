@@ -444,17 +444,16 @@ def test_checkin_api():
 - ✓ Minimal UI
 - Use case: Personal protection
 
-### Phase 2: Cloud API (Next)
+### Phase 2: Mobile (Future)
+- [ ] Mobile app (React Native)
+- [ ] Push notifications
+- Use case: Smartphone integration
+
+### Phase 3: Cloud API (Next)
 - [ ] Postgres database
 - [ ] FastAPI on Heroku/Railway
 - [ ] Background jobs on Celery
 - Use case: Multiple users, web app
-
-### Phase 3: Mobile (Future)
-- [ ] GraphQL API (instead of REST)
-- [ ] Mobile app (React Native)
-- [ ] Push notifications
-- Use case: Smartphone integration
 
 ### Phase 4: Enterprise (Long-term)
 - [ ] Multi-tenant SaaS
@@ -626,16 +625,16 @@ When reviewing new code:
 
 ```
 Phase 1 (Now)                Phase 2              Phase 3
-─────────────────────────────────────────────────────────
-FastAPI Routes              FastAPI              FastAPI + GraphQL
+────────────────────────────────────────────────────────
+FastAPI Routes              FastAPI              FastAPI
     ↓                           ↓                    ↓
 CheckInService          CheckInService      CheckInService (unchanged)
     ↓                           ↓                    ↓
 CheckInRepository   CheckInRepository    Multi-tenant Repository
     ↓                           ↓                    ↓
-SQLite              Postgres + Redis     Postgres + Cache Layer
+SQLite                        SQLite        Postgres + Cache Layer
     ↓                           ↓                    ↓
-APScheduler         Celery + RabbitMQ    AWS Lambda + SQS
+APScheduler                APScheduler        AWS Lambda + SQS
 ```
 
 **The domain layer (`status.py`) never changes.**
