@@ -26,7 +26,7 @@ from app.notifications.models import (
 class CheckInScheduler:
     """Background scheduler for check-in status monitoring"""
     
-    def __init__(self, check_interval_hrs: float = 1):
+    def __init__(self, check_interval_hrs: float = 0.0166): # 1 minute
         self.scheduler = BackgroundScheduler()
         self.check_interval_hours = check_interval_hrs
         self._last_status_by_user: dict[int, CheckInStatus] = {}
@@ -83,6 +83,36 @@ class CheckInScheduler:
                 if status_resp.last_checkin is None:
                     continue
 
+                # Reminders to the user themselves
+                for reminder_status in (CheckInStatus.DUE_SOON, CheckInStatus.MISSED):
+                    if current_status != reminder_status:
+                        continue
+                    
+                    already_reminded = notif_repo.has_sent(
+                        user_id=user.id,
+                        last_checkin_at=status_resp.last_checkin,
+                        status=f"REMINDER_{reminder_status.value}",
+                    )
+                    
+                    if not already_reminded:
+                        try:
+                            self._send_self_reminder(
+                                phone=phone,
+                                status=reminder_status,
+                                hours_until_due=status_resp.hours_until_due,
+                                last_checkin_at=status_resp.last_checkin,
+                            )
+                            notif_repo.record_sent(
+                                user_id=user.id,
+                                last_checkin_at=status_resp.last_checkin,
+                                status=f"REMINDER_{reminder_status.value}",
+                            )
+                        except Exception as e:
+                            print(f"⚠ Reminder error for {phone}: {e}")
+
+                # Two-tier notifications per missed cycle (keyed by last_checkin timestamp):
+                # 1. GRACE_PERIOD: simple "please check on this person" (no sensitive info)
+                # 2. NOTIFIED: full message with instructions (sensitive info for family)
                 for notify_status in (CheckInStatus.GRACE_PERIOD, CheckInStatus.NOTIFIED):
                     if current_status != notify_status:
                         continue
@@ -112,6 +142,38 @@ class CheckInScheduler:
         finally:
             db.close()
     
+    def _send_self_reminder(
+        self,
+        phone: str,
+        status: CheckInStatus,
+        hours_until_due: float,
+        last_checkin_at: datetime,
+    ):
+        """Send a reminder to the user themselves via SMS"""
+        recipient = NotificationRecipient(channel="sms", address=phone)
+
+        if status == CheckInStatus.DUE_SOON:
+            message = NotificationMessage(
+                subject="Check-in Reminder",
+                body=f"Hey! Your SAFE check-in is due in {abs(hours_until_due):.1f} hours. Please check in now to stay SAFE.",
+            )
+        else:  # MISSED
+            message = NotificationMessage(
+                subject="URGENT: Check-in Overdue",
+                body=f"URGENT: You missed your check-in! Please check in immediately to prevent your trusted contacts from being alerted.",
+            )
+
+        print(f"📱 Sending self-reminder to {phone} (status={status})")
+        adapter = self._adapter_by_channel.get("sms", ConsoleNotificationAdapter())
+
+        event = StatusChangeEvent(
+            user_phone=phone,
+            new_status=status,
+            last_checkin_at=last_checkin_at,
+            created_at=datetime.utcnow(),
+        )
+        adapter.send(recipient=recipient, message=message, event=event)
+
     def _notify_user(
         self,
         *,

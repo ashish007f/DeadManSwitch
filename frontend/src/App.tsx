@@ -6,9 +6,13 @@ import {
   ChevronRight, 
   Shield, 
   Check, 
+  CheckCircle,
   User as UserIcon,
   Phone,
-  ArrowRight
+  ArrowRight,
+  Clock,
+  Users,
+  FileText
 } from 'lucide-react';
 import { 
   signInWithPhoneNumber, 
@@ -49,6 +53,7 @@ function StatusBadge({ status }: { status: CheckInStatus }) {
 
 function App() {
   const [user, setUser] = useState<User | null>(null);
+  const [showOnboarding, setShowOnboarding] = useState(true);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState<StatusResponse | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -251,17 +256,67 @@ function App() {
     );
   }
 
+  if (!user && showOnboarding) {
+    return (
+      <div className="login-container">
+        <div className="auth-card onboarding-card">
+          <div className="auth-icon">
+            <CheckCircle size={48} color="var(--success)" />
+          </div>
+          <h1 style={{ fontSize: '28px', marginBottom: '8px' }}>Welcome to I'mGood</h1>
+          <p style={{ color: 'var(--text-muted)', marginBottom: '32px' }}>
+            A simple, reliable safety system for your peace of mind.
+          </p>
+
+          <div className="features-list">
+            <div className="feature-item">
+              <div className="feature-icon"><Clock size={20} /></div>
+              <div className="feature-content">
+                <h3>Quick Check-ins</h3>
+                <p>Confirm you're safe with a single tap at scheduled intervals.</p>
+              </div>
+            </div>
+            
+            <div className="feature-item">
+              <div className="feature-icon"><Users size={20} /></div>
+              <div className="feature-content">
+                <h3>Emergency Contacts</h3>
+                <p>Trusted people get alerted only if you miss your check-in.</p>
+              </div>
+            </div>
+
+            <div className="feature-item">
+              <div className="feature-icon"><FileText size={20} /></div>
+              <div className="feature-content">
+                <h3>Secure Instructions</h3>
+                <p>Store info /directions that only gets shared in an emergency.</p>
+              </div>
+            </div>
+          </div>
+
+          <button 
+            className="btn-checkin" 
+            style={{ marginTop: '32px' }}
+            onClick={() => setShowOnboarding(false)}
+          >
+            Get Started <ArrowRight size={20} />
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (!user) {
     return (
       <div className="login-container">
         <div id="recaptcha-container"></div>
         <div className="auth-card">
           <div className="auth-icon">
-            <Shield size={32} />
+            <CheckCircle size={40} color="var(--success)" />
           </div>
-          <h1>Dead Man Switch</h1>
+          <h1>I'mGood</h1>
           <p style={{ color: 'var(--text-muted)', marginBottom: '24px' }}>
-            Stay connected. Stay safe.
+            Peace of mind with every check-in.
           </p>
 
           {authError && <div className="alert alert-error">{authError}</div>}
@@ -366,7 +421,8 @@ function App() {
     <div className="app-container">
       <header className="app-header">
         <div className="brand">
-          <h1>🛡️ Dead Man Switch</h1>
+          <CheckCircle size={22} color="var(--primary)" style={{ flexShrink: 0 }} />
+          <h1>I'mGood</h1>
         </div>
         <div className="user-profile">
           <div className="display-name">{user.display_name || user.phone}</div>

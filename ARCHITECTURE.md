@@ -1,11 +1,11 @@
-# Architecture Document: Dead Man Switch
+# Architecture Document: I'mGood
 
 **Clean Architecture for Extensible, Production-Grade Safety Systems**
 
 ---
 
 ## 1. Executive Summary
-Dead Man Switch is a modular safety system designed to transition from a local prototype to a hardened, cloud-ready application. It employs **Clean Architecture** to decouple core business logic from infrastructure, enabling independent scaling and deployment of its components.
+I'mGood is a modular safety system designed to transition from a local prototype to a hardened, cloud-ready application. It employs **Clean Architecture** to decouple core business logic from infrastructure, enabling independent scaling and deployment of its components.
 
 ---
 
