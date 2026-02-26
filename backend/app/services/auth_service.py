@@ -8,6 +8,7 @@ Handles authentication business logic.
 from sqlalchemy.orm import Session
 from app.repositories.auth_repo import AuthRepository
 from app.domain.auth_provider import verify_firebase_token
+from app.domain.security import create_access_token, create_refresh_token, decode_token
 from datetime import datetime
 
 
@@ -20,8 +21,7 @@ class AuthService:
     
     def verify_firebase_login(self, id_token: str) -> dict | None:
         """
-        Exchange a Firebase ID token for a local user.
-        This is the PRODUCTION entry point.
+        Exchange a Firebase ID token for a local user and issue JWTs.
         """
         claims = verify_firebase_token(id_token)
         if not claims:
@@ -36,11 +36,31 @@ class AuthService:
         user.last_login = datetime.utcnow()
         self.db.commit()
         
+        # Issue JWTs
+        access_token = create_access_token(data={"sub": user.phone_number})
+        refresh_token = create_refresh_token(data={"sub": user.phone_number})
+        
         return {
             "phone": user.phone_number,
             "display_name": user.display_name,
-            "hash": user.phone_hash
+            "access_token": access_token,
+            "refresh_token": refresh_token
         }
+
+    def refresh_access_token(self, refresh_token: str) -> dict | None:
+        """Issue a new access token from a valid refresh token"""
+        payload = decode_token(refresh_token)
+        if not payload or payload.get("type") != "refresh":
+            return None
+            
+        phone = payload.get("sub")
+        if not phone:
+            return None
+            
+        # Optional: check if user still exists/is active
+        
+        new_access_token = create_access_token(data={"sub": phone})
+        return {"access_token": new_access_token}
 
     def update_display_name(self, phone: str, display_name: str) -> dict:
         """

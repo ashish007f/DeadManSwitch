@@ -20,6 +20,12 @@ class Settings(BaseSettings):
     api_host: str = "127.0.0.1"
     api_port: int = 8000
     
+    # Security
+    secret_key: str = "dev-secret-key-change-in-production"
+    jwt_algorithm: str = "HS256"
+    access_token_expire_minutes: int = 30
+    refresh_token_expire_days: int = 30
+    
     class Config:
         env_file = ".env"
         case_sensitive = False

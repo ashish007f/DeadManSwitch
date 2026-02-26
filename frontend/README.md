@@ -1,6 +1,6 @@
-# Dead Man Switch - Mobile Frontend
+# I'mGood - Mobile Frontend
 
-This is the mobile-first frontend for the Dead Man Switch project, built with **React**, **TypeScript**, and **Vite**.
+This is the mobile-first frontend for the I'mGood project, built with **React**, **TypeScript**, and **Vite**.
 
 ## 🚀 Features
 - **Modern Mobile UI:** Responsive, clean interface using `lucide-react`.

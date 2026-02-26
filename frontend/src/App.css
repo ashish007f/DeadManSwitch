@@ -15,12 +15,16 @@
   margin-bottom: 32px;
 }
 
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .brand h1 {
   font-size: 20px;
   font-weight: 800;
-  background: linear-gradient(135deg, var(--primary) 0%, #7c3aed 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: var(--primary);
   white-space: nowrap;
 }
 
@@ -231,9 +235,13 @@
 
 /* Login specific */
 .login-container {
-  max-width: 400px;
-  margin: 80px auto 0;
+  max-width: 440px;
+  margin: 40px auto;
   padding: 0 16px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 80vh;
 }
 
 .auth-card {
@@ -308,4 +316,53 @@
 .alert-info {
   background: #e0f2fe;
   color: #0ea5e9;
+}
+
+/* Onboarding */
+.onboarding-card {
+  text-align: left !important;
+  max-width: 440px;
+}
+
+.onboarding-card .auth-icon {
+  margin: 0 0 24px 0 !important;
+}
+
+.features-list {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  margin-top: 8px;
+}
+
+.feature-item {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.feature-icon {
+  width: 40px;
+  height: 40px;
+  background: #f1f5f9;
+  color: var(--primary);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.feature-content h3 {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0 0 4px 0;
+  color: var(--text);
+}
+
+.feature-content p {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.5;
 }

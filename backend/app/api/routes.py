@@ -6,12 +6,13 @@ Clean separation:
 - Check-in routes: /api/* → CheckInService → CheckInRepository
 """
 
-from fastapi import APIRouter, Depends, Cookie, Response, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.orm import Session
 
 from app.db.database import get_db
 from app.services.checkin_service import CheckInService
 from app.services.auth_service import AuthService
+from app.api.auth_bearer import get_current_user_phone
 from app.domain.models import (
     CheckInRequest,
     CheckInResponse,
@@ -45,124 +46,94 @@ AuthServiceDep = Depends(get_auth_service)
 @router.post("/checkin", response_model=CheckInResponse)
 async def checkin(
     payload: CheckInRequest = None,
-    phone: str | None = Cookie(default=None, alias="phone"),
+    phone: str = Depends(get_current_user_phone),
     service: CheckInService = CheckInServiceDep,
-    response: Response = None,
 ) -> CheckInResponse:
     """
     Record a check-in.
     
     Returns current status and hours remaining.
     """
-    if not phone:
-        raise HTTPException(status_code=401, detail="not authenticated")
     try:
         return service.record_checkin(phone=phone, hours_ago=(payload.hours_ago if payload else None))
     except ValueError as e:
-        if response:
-            response.delete_cookie("phone")
-        raise HTTPException(status_code=401, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/status", response_model=StatusResponse)
 async def get_status(
-    phone: str | None = Cookie(default=None, alias="phone"),
+    phone: str = Depends(get_current_user_phone),
     service: CheckInService = CheckInServiceDep,
-    response: Response = None,
 ) -> StatusResponse:
     """
     Get current check-in status.
     
     Returns SAFE / DUE_SOON / MISSED along with timing info.
     """
-    if not phone:
-        raise HTTPException(status_code=401, detail="not authenticated")
     try:
         return service.get_status(phone=phone)
     except ValueError as e:
-        if response:
-            response.delete_cookie("phone")
-        raise HTTPException(status_code=401, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/settings", response_model=SettingsResponse)
 async def get_settings(
-    phone: str | None = Cookie(default=None, alias="phone"),
+    phone: str = Depends(get_current_user_phone),
     service: CheckInService = CheckInServiceDep,
-    response: Response = None,
 ) -> SettingsResponse:
     """Get current check-in interval setting for a user"""
-    if not phone:
-        raise HTTPException(status_code=401, detail="not authenticated")
     try:
         return service.get_settings(phone=phone)
     except ValueError as e:
-        if response:
-            response.delete_cookie("phone")
-        raise HTTPException(status_code=401, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/settings", response_model=SettingsResponse)
 async def update_settings(
     update: SettingsUpdate,
-    phone: str | None = Cookie(default=None, alias="phone"),
+    phone: str = Depends(get_current_user_phone),
     service: CheckInService = CheckInServiceDep,
-    response: Response = None,
 ) -> SettingsResponse:
     """Update settings (interval, buffers, contacts)"""
-    if not phone:
-        raise HTTPException(status_code=401, detail="not authenticated")
     try:
         return service.update_settings(update, phone=phone)
     except ValueError as e:
-        if response:
-            response.delete_cookie("phone")
-        raise HTTPException(status_code=401, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/instructions", response_model=InstructionsResponse)
 async def get_instructions(
-    phone: str | None = Cookie(default=None, alias="phone"),
+    phone: str = Depends(get_current_user_phone),
     service: CheckInService = CheckInServiceDep,
-    response: Response = None,
 ) -> InstructionsResponse:
-    """Get instructions for trusted contacts (user-specific if available)"""
-    if not phone:
-        raise HTTPException(status_code=401, detail="not authenticated")
+    """Get instructions for trusted contacts"""
     try:
         return service.get_instructions(phone=phone)
     except ValueError as e:
-        if response:
-            response.delete_cookie("phone")
-        raise HTTPException(status_code=401, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/instructions", response_model=InstructionsResponse)
 async def save_instructions(
     update: InstructionsUpdate,
-    phone: str | None = Cookie(default=None, alias="phone"),
+    phone: str = Depends(get_current_user_phone),
     service: CheckInService = CheckInServiceDep,
-    response: Response = None,
 ) -> InstructionsResponse:
     """Save/update instructions for trusted contacts"""
-    if not phone:
-        raise HTTPException(status_code=401, detail="not authenticated")
     try:
         return service.save_instructions(update.content, phone=phone)
     except ValueError as e:
-        if response:
-            response.delete_cookie("phone")
-        raise HTTPException(status_code=401, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 # ============ AUTHENTICATION ENDPOINTS ============
 
 @router.post("/auth/verify-firebase")
-async def verify_firebase(payload: dict, response: Response, service: AuthService = AuthServiceDep):
+async def verify_firebase(payload: dict, service: AuthService = AuthServiceDep):
     """
     (Production) Verify Firebase ID Token and authenticate user.
     
-    Sets session cookie on success.
+    Returns custom Access and Refresh tokens.
     """
     id_token = payload.get("id_token")
     if not id_token:
@@ -172,75 +143,49 @@ async def verify_firebase(payload: dict, response: Response, service: AuthServic
     if not user:
         raise HTTPException(status_code=401, detail="invalid or expired Firebase token")
         
-    # Set session cookie (Phase 2 will replace this with JWT)
-    response.set_cookie(
-        key="phone",
-        value=user["phone"],
-        httponly=True,
-        max_age=60 * 60 * 24 * 7,
-        path='/',
-        samesite='lax',
-    )
     return user
 
 
+@router.post("/auth/refresh")
+async def refresh_token(payload: dict, service: AuthService = AuthServiceDep):
+    """Exchange Refresh Token for a new Access Token"""
+    refresh_token = payload.get("refresh_token")
+    if not refresh_token:
+        raise HTTPException(status_code=400, detail="refresh_token required")
+        
+    result = service.refresh_access_token(refresh_token)
+    if not result:
+        raise HTTPException(status_code=401, detail="invalid or expired refresh token")
+        
+    return result
+
+
 @router.post("/auth/logout")
-async def logout(response: Response):
-    # Explicitly clear the cookie with EXACTLY the same parameters
-    response.delete_cookie(
-        key="phone",
-        path='/',
-        httponly=True,
-        samesite='lax'
-    )
-    # Adding this header prevents the browser from using a cached version of the page
-    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+async def logout():
+    """Client-side handles token clearing, this is for completeness"""
     return {"ok": True}
 
 
 @router.post("/auth/update-display-name")
 async def update_display_name(
     payload: dict,
-    response: Response,
-    phone: str | None = Cookie(default=None, alias="phone"),
+    phone: str = Depends(get_current_user_phone),
     service: AuthService = AuthServiceDep,
 ):
-    """Update user's display name (optional profile setup)"""
-    if not phone:
-        raise HTTPException(status_code=401, detail="not authenticated")
+    """Update user's display name"""
     display_name = payload.get("display_name")
     if not display_name:
         raise HTTPException(status_code=400, detail="display_name required")
-    user = service.update_display_name(phone, display_name)
-    # refresh cookie to ensure browser keeps it
-    response.set_cookie(
-        key="phone",
-        value=user["phone"],
-        httponly=True,
-        max_age=60 * 60 * 24 * 7,
-        path='/',
-        samesite='lax',
-    )
-    return user
+    return service.update_display_name(phone, display_name)
 
 
 @router.get("/me")
 async def whoami(
-    phone: str | None = Cookie(default=None, alias="phone"),
+    phone: str = Depends(get_current_user_phone),
     service: AuthService = AuthServiceDep,
-    response: Response = None,
 ):
     """Get current authenticated user info"""
-    if not phone:
-        raise HTTPException(status_code=401, detail="not authenticated")
     user = service.get_user_info(phone)
     if not user:
-        # Clear stale cookie
-        try:
-            response.delete_cookie("phone")
-        except:
-            pass
         raise HTTPException(status_code=401, detail="user not found")
     return user
-
-

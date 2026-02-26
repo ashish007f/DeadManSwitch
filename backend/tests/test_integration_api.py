@@ -49,7 +49,7 @@ def client():
 
 @pytest.fixture
 def authenticated_user(client):
-    """Create and authenticate a test user (Manual Cookie Header)"""
+    """Create and authenticate a test user (JWT Injection)"""
     phone = "+16502530000"
     
     # Ensure user exists in the DB
@@ -62,8 +62,12 @@ def authenticated_user(client):
     finally:
         db.close()
     
-    # Set the cookie on the client
-    client.cookies.set("phone", phone, path="/")
+    # Create JWT
+    from app.domain.security import create_access_token
+    access_token = create_access_token(data={"sub": phone})
+    
+    # Set the token on the client for all subsequent requests in this session
+    client.headers["Authorization"] = f"Bearer {access_token}"
     
     return phone, client
 
@@ -78,18 +82,18 @@ class TestProductionAuthentication:
         assert "invalid or expired Firebase token" in response.json()["detail"]
 
     def test_logout(self, authenticated_user):
-        """Test logout clears cookie"""
+        """Test logout clears header (Simulation)"""
         phone, client = authenticated_user
         
         response = client.post("/api/auth/logout")
         assert response.status_code == 200
         
-        # Manually clear for TestClient if it didn't respect delete_cookie header
-        client.cookies.clear()
+        # Client side would clear header
+        del client.headers["Authorization"]
         
-        # Verify cookie is cleared
+        # Verify unauthorized
         response = client.get("/api/status")
-        assert response.status_code == 401
+        assert response.status_code == 401 # HTTPBearer returns 401 for missing header
 
 
 class TestCheckIn:
@@ -220,8 +224,11 @@ class TestUserFlow:
         """Test complete flow: login → check-in → status → settings"""
         phone = "+12125550000"
         
-        # 1. Login (Simulate via cookie since we can't easily mock Firebase admin in this integration test)
-        client.cookies.set("phone", phone, path="/")
+        # 1. Login (Simulate JWT)
+        from app.domain.security import create_access_token
+        access_token = create_access_token(data={"sub": phone})
+        client.headers["Authorization"] = f"Bearer {access_token}"
+        
         # Ensure user exists in the correct DB
         from app.db.database import get_db
         db = next(app.dependency_overrides[get_db]())

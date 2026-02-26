@@ -1,8 +1,8 @@
-# Dead Man Switch 🛡️
+# I'mGood ✅
 
 **A production-ready safety system built with Clean Architecture.**
 
-This project is a modern implementation of a "Dead Man Switch" – a safety mechanism that triggers automatically if the user fails to check in within a pre-defined interval.
+This project is a modern implementation of "I'mGood" – a safety mechanism that triggers automatically if the user fails to check in within a pre-defined interval.
 
 ## 📂 Project Structure
 

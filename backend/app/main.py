@@ -13,7 +13,7 @@ from app.db.database import engine
 from app.db.schema import Base, init_db
 from app.config import settings
 from app.api import routes
-# from app.scheduler.jobs import start_scheduler, stop_scheduler  # Disabled for now
+from app.scheduler.jobs import start_scheduler, stop_scheduler
 
 # Initialize database tables
 init_db()
@@ -33,13 +33,13 @@ app.include_router(routes.router)
 async def startup():
     """Initialize on app startup"""
     print("📍 Dead-Man Check-In starting...")
-    # start_scheduler()  # Disabled for now
+    start_scheduler()
 
 
 @app.on_event("shutdown")
 async def shutdown():
     """Cleanup on app shutdown"""
-    # stop_scheduler()  # Disabled for now
+    stop_scheduler()
     print("👋 Dead-Man Check-In shutting down...")
 
 
