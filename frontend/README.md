@@ -1,73 +1,77 @@
-# React + TypeScript + Vite
+# Dead Man Switch - Mobile Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This is the mobile-first frontend for the Dead Man Switch project, built with **React**, **TypeScript**, and **Vite**.
 
-Currently, two official plugins are available:
+## 🚀 Features
+- **Modern Mobile UI:** Responsive, clean interface using `lucide-react`.
+- **Firebase Auth:** Production-grade phone authentication with invisible reCAPTCHA.
+- **Dynamic Status:** Visual feedback (Green/Amber/Red) based on your check-in status.
+- **Decoupled:** Communicates with the FastAPI backend via a secure proxy.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+---
 
-## React Compiler
+## 🛠️ Setup & Installation
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### 1. Prerequisites
+- **Node.js** (v18 or higher recommended)
+- **npm** or **yarn**
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### 2. Install Dependencies
+```bash
+cd frontend
+npm install
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### 3. Firebase Configuration
+The app uses Firebase Phone Authentication. You need to provide your own Firebase config:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+1.  Create a project in the [Firebase Console](https://console.firebase.google.com/).
+2.  Enable **Phone Authentication** in the "Build > Authentication" section.
+3.  Register a **Web App** in Project Settings.
+4.  Create a `.env.local` file in the `frontend/` directory:
+    ```env
+    VITE_FIREBASE_API_KEY=your_api_key
+    VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+    VITE_FIREBASE_PROJECT_ID=your_project_id
+    VITE_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
+    VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+    VITE_FIREBASE_APP_ID=your_app_id
+    ```
+    *(Alternatively, edit `src/firebase.ts` directly, though `.env` is preferred for security).*
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+---
+
+## 💻 Development
+
+### Run the App
+```bash
+npm run dev
 ```
+The app will be available at `http://localhost:5173`.
+
+### Connecting to Backend
+The app expects the backend to be running on `http://localhost:8000`. Vite is configured to proxy all `/api` requests to this address.
+
+### Mobile Device Testing
+To test on a physical mobile device:
+1.  Ensure your phone and computer are on the same Wi-Fi.
+2.  Run with the host flag:
+    ```bash
+    npm run dev -- --host
+    ```
+3.  Open the **Network URL** shown in your terminal on your phone's browser.
+
+---
+
+## 📦 Production
+
+### Build for Production
+```bash
+npm run build
+```
+The production-ready assets will be generated in the `dist/` directory.
+
+### UI/UX Standards
+- **Mobile First:** Optimized for small screens and touch interactions.
+- **Visual Feedback:** Entire status card changes color based on safety status.
+- **Accessibility:** Uses semantic HTML and clear labels.
