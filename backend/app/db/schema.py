@@ -11,18 +11,6 @@ from datetime import datetime
 Base = declarative_base()
 
 
-class OTP(Base):
-    """OTP storage for phone verification"""
-    __tablename__ = "otps"
-
-    id = Column(Integer, primary_key=True)
-    phone_number = Column(String(20), nullable=False)
-    code = Column(String(6), nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    expires_at = Column(DateTime, nullable=False)
-    verified = Column(Integer, default=0)  # 0=unused, 1=verified
-
-
 class Settings(Base):
     """Application settings (check-in interval, etc.)"""
     __tablename__ = "settings"
@@ -59,13 +47,16 @@ class Instructions(Base):
 
 
 class User(Base):
-    """User table - phone number based with OTP"""
+    """User table - phone number based with Hashed Identity"""
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True)
     phone_number = Column(String(20), unique=True, nullable=False)
+    phone_hash = Column(String(64), unique=True, nullable=True)  # SHA-256 hash for privacy
     display_name = Column(String(256), nullable=True)
     verified = Column(Integer, default=0)  # 0=unverified, 1=verified
+    created_at = Column(DateTime, default=datetime.utcnow)
+    last_login = Column(DateTime, nullable=True)
 
 
 class NotificationLog(Base):

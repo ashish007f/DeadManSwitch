@@ -1,12 +1,14 @@
 """
 Authentication service layer.
 
-Orchestrates authentication workflows (signup, login, OTP verification).
+Orchestrates authentication workflows (Firebase verification, profile management).
 Handles authentication business logic.
 """
 
 from sqlalchemy.orm import Session
 from app.repositories.auth_repo import AuthRepository
+from app.domain.auth_provider import verify_firebase_token
+from datetime import datetime
 
 
 class AuthService:
@@ -16,30 +18,28 @@ class AuthService:
         self.db = db
         self.auth_repo = AuthRepository(db)
     
-    def send_otp(self, phone: str) -> dict:
+    def verify_firebase_login(self, id_token: str) -> dict | None:
         """
-        Initiate signup/login by sending OTP to phone.
-        
-        Returns:
-            Dict with "ok": bool and "otp": code (for dev mode)
+        Exchange a Firebase ID token for a local user.
+        This is the PRODUCTION entry point.
         """
-        code = self.auth_repo.send_otp(phone)
-        print(f"[OTP] Phone: {phone}, Code: {code}")
-        return {"ok": True, "otp": code}
-
-    def verify_otp(self, phone: str, code: str) -> dict | None:
-        """
-        Verify OTP and authenticate user.
-        
-        Returns:
-            Dict with user info (phone, display_name) or None if invalid
-        """
-        ok, user = self.auth_repo.verify_otp(phone, code)
-        if not ok or not user:
+        claims = verify_firebase_token(id_token)
+        if not claims:
             return None
+            
+        phone = claims.get("phone_number")
+        if not phone:
+            return None
+            
+        user = self.auth_repo.get_or_create_user(phone)
+        user.verified = 1
+        user.last_login = datetime.utcnow()
+        self.db.commit()
+        
         return {
             "phone": user.phone_number,
-            "display_name": user.display_name
+            "display_name": user.display_name,
+            "hash": user.phone_hash
         }
 
     def update_display_name(self, phone: str, display_name: str) -> dict:
