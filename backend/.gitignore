@@ -8,6 +8,9 @@ wheels/
 *.egg-info
 checkin.db
 firebase-key.json
+.env
+.env.*
+*.log
 
 # Virtual environments
 .venv

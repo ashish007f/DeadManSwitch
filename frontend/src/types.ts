@@ -3,6 +3,8 @@ export type CheckInStatus = 'SAFE' | 'DUE_SOON' | 'MISSED' | 'GRACE_PERIOD' | 'N
 export interface User {
   phone: string;
   display_name?: string;
+  access_token?: string;
+  refresh_token?: string;
 }
 
 export interface StatusResponse {

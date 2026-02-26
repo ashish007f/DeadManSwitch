@@ -8,11 +8,63 @@ import type {
 
 const API_BASE = '/api';
 
+// Token storage helpers
+const getAccessToken = () => localStorage.getItem('access_token');
+const getRefreshToken = () => localStorage.getItem('refresh_token');
+const setTokens = (access: string, refresh: string) => {
+  localStorage.setItem('access_token', access);
+  localStorage.setItem('refresh_token', refresh);
+};
+const clearTokens = () => {
+  localStorage.removeItem('access_token');
+  localStorage.removeItem('refresh_token');
+};
+
 async function request<T>(url: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_BASE}${url}`, {
+  const token = getAccessToken();
+  
+  const headers = new Headers(options?.headers);
+  if (token) {
+    headers.set('Authorization', `Bearer ${token}`);
+  }
+
+  let res = await fetch(`${API_BASE}${url}`, {
     ...options,
-    credentials: 'include',
+    headers,
   });
+  
+  // Handle Token Expiration
+  if (res.status === 403) {
+    const refreshToken = getRefreshToken();
+    if (refreshToken) {
+      // Try to refresh
+      try {
+        const refreshRes = await fetch(`${API_BASE}/auth/refresh`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refresh_token: refreshToken }),
+        });
+        
+        if (refreshRes.ok) {
+          const { access_token } = await refreshRes.json();
+          localStorage.setItem('access_token', access_token);
+          
+          // Retry original request
+          headers.set('Authorization', `Bearer ${access_token}`);
+          res = await fetch(`${API_BASE}${url}`, {
+            ...options,
+            headers,
+          });
+        } else {
+          clearTokens();
+          window.location.reload(); // Force login
+        }
+      } catch (err) {
+        clearTokens();
+        window.location.reload();
+      }
+    }
+  }
   
   if (!res.ok) {
     const error = await res.json().catch(() => ({ detail: 'Unknown error' }));
@@ -24,15 +76,26 @@ async function request<T>(url: string, options?: RequestInit): Promise<T> {
 
 export const api = {
   // Auth
-  verifyFirebase: (idToken: string) =>
-    request<User>('/auth/verify-firebase', {
+  verifyFirebase: async (idToken: string) => {
+    const user = await request<User>('/auth/verify-firebase', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id_token: idToken }),
-    }),
+    });
+    if (user.access_token && user.refresh_token) {
+      setTokens(user.access_token, user.refresh_token);
+    }
+    return user;
+  },
   
-  logout: () =>
-    request<{ ok: boolean }>('/auth/logout', { method: 'POST' }),
+  logout: async () => {
+    try {
+      await request<{ ok: boolean }>('/auth/logout', { method: 'POST' });
+    } finally {
+      clearTokens();
+    }
+    return { ok: true };
+  },
   
   updateDisplayName: (displayName: string) =>
     request<User>('/auth/update-display-name', {

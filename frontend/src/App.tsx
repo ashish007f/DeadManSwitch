@@ -81,10 +81,17 @@ function App() {
   }, [user]);
 
   async function checkAuth() {
+    const hasToken = !!localStorage.getItem('refresh_token');
+    if (!hasToken) {
+      setLoading(false);
+      return;
+    }
+
     try {
       const data = await api.me();
       setUser(data);
     } catch (err) {
+      console.error('Auth check failed', err);
       setUser(null);
     } finally {
       setLoading(false);
@@ -266,14 +273,14 @@ function App() {
                 <div style={{ position: 'relative' }}>
                   <Phone size={18} style={{ position: 'absolute', left: 14, top: 14, color: 'var(--text-muted)' }} />
                   <input 
-                    type="tel" 
-                    placeholder="+1 555 123 4567" 
+                    type="mobile" 
+                    placeholder="+919876543210" 
                     value={phoneInput}
                     onChange={e => setPhoneInput(e.target.value)}
                     style={{ paddingLeft: 44 }}
                   />
                 </div>
-                <p className="form-hint" style={{ marginTop: '8px' }}>Include country code (e.g. +1 for USA)</p>
+                <p className="form-hint" style={{ marginTop: '8px' }}>Include country code (e.g. +91 for IND)</p>
               </div>
               <button 
                 className="btn-checkin" 
