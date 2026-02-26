@@ -3,9 +3,9 @@
 ## Test Scope
 
 ### 1. Authentication & User Management
-- [ ] OTP generation and validation
-- [ ] User creation on first login
-- [ ] Session management (cookies)
+- [ ] Firebase ID Token validation
+- [ ] User creation on first login (with hashed identity)
+- [ ] Session management (cookies / Phase 2 JWT)
 - [ ] Display name updates
 - [ ] Logout functionality
 
@@ -49,9 +49,8 @@
 - [ ] Cookie handling
 
 ### 8. Edge Cases & Error Handling
-- [ ] Invalid phone number
-- [ ] Expired OTP
-- [ ] Invalid OTP code
+- [ ] Invalid phone number format (E.164)
+- [ ] Expired or invalid Firebase ID Token
 - [ ] User not found scenarios
 - [ ] Database errors
 - [ ] Missing required fields

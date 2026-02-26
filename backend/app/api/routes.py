@@ -157,38 +157,22 @@ async def save_instructions(
 
 # ============ AUTHENTICATION ENDPOINTS ============
 
-@router.post("/auth/send-otp")
-async def send_otp(payload: dict, service: AuthService = AuthServiceDep):
+@router.post("/auth/verify-firebase")
+async def verify_firebase(payload: dict, response: Response, service: AuthService = AuthServiceDep):
     """
-    Initiate signup/login: send OTP to phone number.
+    (Production) Verify Firebase ID Token and authenticate user.
     
-    Returns OTP code (dev mode only).
+    Sets session cookie on success.
     """
-    phone = payload.get("phone")
-    if not phone:
-        raise HTTPException(status_code=400, detail="phone required")
-    result = service.send_otp(phone)
-    return result
-
-
-@router.post("/auth/verify-otp")
-async def verify_otp(payload: dict, response: Response, service: AuthService = AuthServiceDep):
-    """
-    Verify OTP and authenticate user.
-    
-    Sets phone cookie on success and returns user info.
-    """
-    phone = payload.get("phone")
-    code = payload.get("code")
-    if not phone or not code:
-        raise HTTPException(status_code=400, detail="phone and code required")
-    user = service.verify_otp(phone, code)
+    id_token = payload.get("id_token")
+    if not id_token:
+        raise HTTPException(status_code=400, detail="id_token required")
+        
+    user = service.verify_firebase_login(id_token)
     if not user:
-        raise HTTPException(status_code=401, detail="invalid or expired OTP")
-    # Set a persistent cookie for 7 days to keep session across navigation
-    # Set an HttpOnly session cookie so the browser sends it on subsequent
-    # navigations and JS cannot tamper with it. Keep SameSite lax for normal
-    # navigation. For local development we leave `secure` False.
+        raise HTTPException(status_code=401, detail="invalid or expired Firebase token")
+        
+    # Set session cookie (Phase 2 will replace this with JWT)
     response.set_cookie(
         key="phone",
         value=user["phone"],
