@@ -4,7 +4,7 @@ SQLAlchemy ORM schema definitions.
 Minimal schema focused on core functionality.
 """
 
-from sqlalchemy import Column, Integer, DateTime, String, Text, ForeignKey, Index
+from sqlalchemy import Column, Integer, Float, DateTime, String, Text, ForeignKey, Index
 from sqlalchemy.ext.declarative import declarative_base
 from datetime import datetime
 
@@ -18,11 +18,11 @@ class Settings(Base):
     id = Column(Integer, primary_key=True)
     # per-user settings
     user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
-    checkin_interval_hours = Column(Integer, default=48)
+    checkin_interval_hours = Column(Float, default=48.0)
     # How long after being MISSED before entering GRACE_PERIOD (hours)
-    missed_buffer_hours = Column(Integer, default=1)
+    missed_buffer_hours = Column(Float, default=1.0)
     # Grace period after missed buffer before notifying (hours)
-    grace_period_hours = Column(Integer, default=24)
+    grace_period_hours = Column(Float, default=24.0)
     # JSON/text-encoded contacts for trusted people (future: separate table)
     contacts = Column(Text, nullable=True)
 
@@ -54,6 +54,7 @@ class User(Base):
     phone_number = Column(String(20), unique=True, nullable=False)
     phone_hash = Column(String(64), unique=True, nullable=True)  # SHA-256 hash for privacy
     display_name = Column(String(256), nullable=True)
+    fcm_token = Column(String(512), nullable=True)
     verified = Column(Integer, default=0)  # 0=unverified, 1=verified
     created_at = Column(DateTime, default=datetime.utcnow)
     last_login = Column(DateTime, nullable=True)

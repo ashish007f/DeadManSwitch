@@ -4,9 +4,10 @@ FastAPI application entrypoint.
 Initializes database, routes, and scheduler.
 """
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, RedirectResponse
+from fastapi.middleware.cors import CORSMiddleware
 import os
 
 from app.db.database import engine
@@ -25,8 +26,63 @@ app = FastAPI(
     version="0.1.0",
 )
 
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # For development, allow all origins
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # Include API routes
 app.include_router(routes.router)
+
+# Resolve frontend dist path
+base_dir = os.path.dirname(os.path.abspath(__file__))
+frontend_dist = os.path.abspath(os.path.join(base_dir, "..", "..", "frontend", "dist"))
+print(f"📦 Serving frontend from: {frontend_dist}")
+print(f"📁 Exists: {os.path.exists(frontend_dist)}")
+
+# Serve React static files if frontend/dist exists
+if os.path.exists(frontend_dist):
+    app.mount("/assets", StaticFiles(directory=os.path.join(frontend_dist, "assets")), name="assets")
+    
+    # Specific PWA / Static files at root
+    @app.get("/sw.js")
+    async def serve_sw():
+        return FileResponse(os.path.join(frontend_dist, "sw.js"))
+
+    @app.get("/manifest.webmanifest")
+    async def serve_manifest():
+        return FileResponse(os.path.join(frontend_dist, "manifest.webmanifest"))
+
+    @app.get("/registerSW.js")
+    async def serve_register_sw():
+        return FileResponse(os.path.join(frontend_dist, "registerSW.js"))
+
+    @app.get("/")
+    async def serve_root():
+        return FileResponse(os.path.join(frontend_dist, "index.html"))
+
+    # Fallback for React SPAs
+    @app.get("/{full_path:path}")
+    async def serve_react(full_path: str):
+        # 1. Try to serve a specific file if it exists in dist (e.g., icons, favicon)
+        file_path = os.path.join(frontend_dist, full_path)
+        if os.path.isfile(file_path):
+            return FileResponse(file_path)
+        
+        # 2. Handle API 404s
+        if full_path == "api" or full_path.startswith("api/"):
+            raise HTTPException(status_code=404, detail="Not Found")
+            
+        # 3. Default to index.html for all other routes (for client-side routing)
+        return FileResponse(os.path.join(frontend_dist, "index.html"))
+else:
+    @app.get("/")
+    async def root():
+        return {"msg": "Frontend not built. Run 'npm run build' in frontend/ directory."}
 
 
 @app.on_event("startup")
@@ -41,36 +97,6 @@ async def shutdown():
     """Cleanup on app shutdown"""
     stop_scheduler()
     print("👋 Dead-Man Check-In shutting down...")
-
-
-@app.get("/")
-async def root(request: Request):
-    phone_cookie = request.cookies.get('phone')
-    
-    # Define paths
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    login_path = os.path.join(base_dir, "templates", "login.html")
-    index_path = os.path.join(base_dir, "templates", "index.html")
-
-    if not phone_cookie:
-        response = FileResponse(login_path) if os.path.exists(login_path) else {"msg": "no login"}
-    else:
-        response = FileResponse(index_path) if os.path.exists(index_path) else {"msg": "no index"}
-
-    # CRITICAL: Prevent Safari from caching the "mode" (login vs dashboard)
-    if isinstance(response, FileResponse):
-        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
-        response.headers["Pragma"] = "no-cache"
-        response.headers["Expires"] = "0"
-    
-    return response
-
-
-@app.get("/login")
-async def login_page():
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    login_path = os.path.join(base_dir, "templates", "login.html")
-    return FileResponse(login_path)
 
 
 @app.get("/health")
