@@ -318,6 +318,54 @@
   color: #0ea5e9;
 }
 
+/* Utilities */
+.full-screen-center {
+  display: flex;
+  height: 100vh;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Settings Toggle */
+.settings-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  opacity: 0.8;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.settings-toggle:hover {
+  opacity: 1;
+}
+
+.settings-toggle-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.settings-icon-wrapper {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.settings-label {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.settings-sublabel {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
 /* Onboarding */
 .onboarding-card {
   text-align: left !important;

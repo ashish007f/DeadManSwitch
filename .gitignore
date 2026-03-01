@@ -1,0 +1,29 @@
+# IDEs and OS
+.DS_Store
+.vscode/
+.idea/
+
+# Backend
+backend/.venv/
+backend/__pycache__/
+backend/.pytest_cache/
+backend/*.db
+backend/*.log
+backend/.env
+backend/.env.*
+backend/firebase-key.json
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.*
+frontend/*.local
+frontend/generate-icons.js
+
+# General
+*.log
+.env
+.env.*
+node_modules/
+dist/
