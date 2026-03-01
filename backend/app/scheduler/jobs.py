@@ -16,6 +16,8 @@ from app.domain.status import CheckInStatus
 from app.db.schema import User
 from app.repositories.notification_repo import NotificationLogRepository
 from app.notifications.adapters.console import ConsoleNotificationAdapter
+from app.notifications.adapters.fcm import FCMNotificationAdapter
+from app.notifications.adapters.resend import ResendEmailNotificationAdapter
 from app.notifications.models import (
     NotificationMessage,
     NotificationRecipient,
@@ -32,9 +34,10 @@ class CheckInScheduler:
         self._last_status_by_user: dict[int, CheckInStatus] = {}
         # Phase 2: pluggable adapter registry (currently console for all channels)
         self._adapter_by_channel = {
-            "email": ConsoleNotificationAdapter(),
+            "email": ResendEmailNotificationAdapter(),
             "sms": ConsoleNotificationAdapter(),
             "whatsapp": ConsoleNotificationAdapter(),
+            "push": FCMNotificationAdapter(),
         }
     
     def start(self):
@@ -98,6 +101,7 @@ class CheckInScheduler:
                         try:
                             self._send_self_reminder(
                                 phone=phone,
+                                fcm_token=user.fcm_token,
                                 status=reminder_status,
                                 hours_until_due=status_resp.hours_until_due,
                                 last_checkin_at=status_resp.last_checkin,
@@ -145,13 +149,12 @@ class CheckInScheduler:
     def _send_self_reminder(
         self,
         phone: str,
+        fcm_token: Optional[str],
         status: CheckInStatus,
         hours_until_due: float,
         last_checkin_at: datetime,
     ):
-        """Send a reminder to the user themselves via SMS"""
-        recipient = NotificationRecipient(channel="sms", address=phone)
-
+        """Send a reminder to the user themselves via SMS and/or Push Notification"""
         if status == CheckInStatus.DUE_SOON:
             message = NotificationMessage(
                 subject="Check-in Reminder",
@@ -164,15 +167,25 @@ class CheckInScheduler:
             )
 
         print(f"📱 Sending self-reminder to {phone} (status={status})")
-        adapter = self._adapter_by_channel.get("sms", ConsoleNotificationAdapter())
-
+        
         event = StatusChangeEvent(
             user_phone=phone,
             new_status=status,
             last_checkin_at=last_checkin_at,
             created_at=datetime.utcnow(),
         )
-        adapter.send(recipient=recipient, message=message, event=event)
+
+        # 1. Send via Push (if token is available)
+        if fcm_token:
+            push_recipient = NotificationRecipient(channel="push", address=fcm_token)
+            push_adapter = self._adapter_by_channel.get("push")
+            if push_adapter:
+                push_adapter.send(recipient=push_recipient, message=message, event=event)
+
+        # 2. Send via SMS (always fallback/primary)
+        sms_recipient = NotificationRecipient(channel="sms", address=phone)
+        sms_adapter = self._adapter_by_channel.get("sms", ConsoleNotificationAdapter())
+        sms_adapter.send(recipient=sms_recipient, message=message, event=event)
 
     def _notify_user(
         self,

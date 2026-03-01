@@ -179,6 +179,19 @@ async def update_display_name(
     return service.update_display_name(phone, display_name)
 
 
+@router.post("/auth/update-fcm-token")
+async def update_fcm_token(
+    payload: dict,
+    phone: str = Depends(get_current_user_phone),
+    service: AuthService = AuthServiceDep,
+):
+    """Update user's FCM token for push notifications"""
+    fcm_token = payload.get("fcm_token")
+    if not fcm_token:
+        raise HTTPException(status_code=400, detail="fcm_token required")
+    return service.update_fcm_token(phone, fcm_token)
+
+
 @router.get("/me")
 async def whoami(
     phone: str = Depends(get_current_user_phone),

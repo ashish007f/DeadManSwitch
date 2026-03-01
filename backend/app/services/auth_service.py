@@ -75,6 +75,19 @@ class AuthService:
             "display_name": user.display_name
         }
 
+    def update_fcm_token(self, phone: str, fcm_token: str) -> dict:
+        """
+        Update user's FCM token.
+        
+        Returns:
+            Dict with updated user info
+        """
+        user = self.auth_repo.update_fcm_token(phone, fcm_token)
+        return {
+            "phone": user.phone_number,
+            "fcm_token": user.fcm_token
+        }
+
     def get_user_info(self, phone: str) -> dict | None:
         """
         Get user information by phone.

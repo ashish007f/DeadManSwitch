@@ -55,3 +55,11 @@ class AuthRepository:
         self.db.commit()
         self.db.refresh(user)
         return user
+
+    def update_fcm_token(self, phone: str, fcm_token: str) -> User:
+        """Update user's FCM token for push notifications"""
+        user = self.get_or_create_user(phone)
+        user.fcm_token = fcm_token
+        self.db.commit()
+        self.db.refresh(user)
+        return user

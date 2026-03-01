@@ -1,8 +1,9 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, RecaptchaVerifier } from 'firebase/auth';
+import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 
 // Replace these with your actual Firebase config
-// or use environment variables in Vite (.env.local)ß
+// or use environment variables in Vite (.env.local)
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -15,6 +16,16 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 
+// Messaging might not be supported in all environments (e.g. non-HTTPS)
+let messaging: any = null;
+try {
+  messaging = getMessaging(app);
+} catch (err) {
+  console.warn('Firebase Messaging not supported in this browser:', err);
+}
+
+export { messaging };
+
 // Language for OTP SMS
 auth.useDeviceLanguage();
 
@@ -26,3 +37,28 @@ export const setupRecaptcha = (elementId: string) => {
     }
   });
 };
+
+export const requestForToken = async () => {
+  if (!messaging) return null;
+  try {
+    const currentToken = await getToken(messaging, {
+      vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY,
+    });
+    if (currentToken) {
+      return currentToken;
+    } else {
+      console.log('No registration token available. Request permission to generate one.');
+    }
+  } catch (err) {
+    console.log('An error occurred while retrieving token. ', err);
+  }
+  return null;
+};
+
+export const onMessageListener = () =>
+  new Promise((resolve) => {
+    if (!messaging) return;
+    onMessage(messaging, (payload) => {
+      resolve(payload);
+    });
+  });

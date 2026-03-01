@@ -7,7 +7,7 @@ from typing import Literal
 from app.domain.status import CheckInStatus
 
 
-NotificationChannel = Literal["email", "sms", "whatsapp"]
+NotificationChannel = Literal["email", "sms", "whatsapp", "push"]
 
 
 @dataclass(frozen=True)

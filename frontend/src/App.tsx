@@ -4,7 +4,6 @@ import {
   MapPin, 
   Settings as SettingsIcon, 
   ChevronRight, 
-  Shield, 
   Check, 
   CheckCircle,
   User as UserIcon,
@@ -21,7 +20,7 @@ import {
 import type { 
   ConfirmationResult, 
 } from 'firebase/auth';
-import { auth } from './firebase';
+import { auth, requestForToken, onMessageListener } from './firebase';
 import { api } from './api';
 import type { 
   User, 
@@ -32,6 +31,19 @@ import type {
 import './App.css';
 
 // --- Sub-components ---
+
+function formatDate(dateString: string | null | undefined) {
+  if (!dateString) return { time: '--:--', date: 'Never' };
+  
+  // Ensure the date string is treated as UTC by appending 'Z' if missing
+  const utcString = dateString.endsWith('Z') ? dateString : `${dateString}Z`;
+  const date = new Date(utcString);
+  
+  return {
+    time: date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    date: date.toLocaleDateString()
+  };
+}
 
 function StatusBadge({ status }: { status: CheckInStatus }) {
   const labels: Record<CheckInStatus, string> = {
@@ -77,13 +89,35 @@ function App() {
   }, []);
 
   useEffect(() => {
+    if (user) {
+      handleFcmToken();
+      onMessageListener().then((payload) => {
+        console.log('Foreground message received:', payload);
+        // You could show a toast or alert here
+        alert('Notification: ' + (payload as any)?.notification?.title);
+      });
+    }
+  }, [user]);
+
+  useEffect(() => {
     let interval: number;
     if (user) {
       fetchStatus();
-      interval = window.setInterval(fetchStatus, 5000);
+      interval = window.setInterval(fetchStatus, 60000); // Refresh every 1 min to keep status updated
     }
     return () => clearInterval(interval);
   }, [user]);
+
+  async function handleFcmToken() {
+    try {
+      const token = await requestForToken();
+      if (token) {
+        await api.updateFcmToken(token);
+      }
+    } catch (err) {
+      console.error('Failed to get FCM token', err);
+    }
+  }
 
   async function checkAuth() {
     const hasToken = !!localStorage.getItem('refresh_token');
@@ -328,7 +362,7 @@ function App() {
                 <div style={{ position: 'relative' }}>
                   <Phone size={18} style={{ position: 'absolute', left: 14, top: 14, color: 'var(--text-muted)' }} />
                   <input 
-                    type="mobile" 
+                    type="tel" 
                     placeholder="+919876543210" 
                     value={phoneInput}
                     onChange={e => setPhoneInput(e.target.value)}
@@ -448,10 +482,10 @@ function App() {
             <div className="metric">
               <span className="metric-label">Last Check-In</span>
               <span className="metric-value">
-                {status?.last_checkin ? new Date(status.last_checkin).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
+                {formatDate(status?.last_checkin).time}
               </span>
               <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                {status?.last_checkin ? new Date(status.last_checkin).toLocaleDateString() : 'Never'}
+                {formatDate(status?.last_checkin).date}
               </span>
             </div>
             <div className="metric">
@@ -566,8 +600,9 @@ function SettingsPanel({ onClose, onSaveSuccess }: { onClose: () => void, onSave
         <label>Check-In Interval (hours)</label>
         <input 
           type="number" 
-          value={settings?.checkin_interval_hours || ''} 
-          onChange={e => setSettings(s => s ? {...s, checkin_interval_hours: parseInt(e.target.value) || 0} : null)}
+          step="any"
+          value={settings?.checkin_interval_hours ?? ''} 
+          onChange={e => setSettings(s => s ? {...s, checkin_interval_hours: parseFloat(e.target.value) || 0} : null)}
         />
         <p className="form-hint">How often should you check in?</p>
       </div>
@@ -576,8 +611,9 @@ function SettingsPanel({ onClose, onSaveSuccess }: { onClose: () => void, onSave
         <label>Missed Buffer (hours)</label>
         <input 
           type="number" 
-          value={settings?.missed_buffer_hours || ''} 
-          onChange={e => setSettings(s => s ? {...s, missed_buffer_hours: parseInt(e.target.value) || 0} : null)}
+          step="any"
+          value={settings?.missed_buffer_hours ?? ''} 
+          onChange={e => setSettings(s => s ? {...s, missed_buffer_hours: parseFloat(e.target.value) || 0} : null)}
         />
         <p className="form-hint">Extra time before the interval is considered MISSED.</p>
       </div>
@@ -586,8 +622,9 @@ function SettingsPanel({ onClose, onSaveSuccess }: { onClose: () => void, onSave
         <label>Grace Period (hours)</label>
         <input 
           type="number" 
-          value={settings?.grace_period_hours || ''} 
-          onChange={e => setSettings(s => s ? {...s, grace_period_hours: parseInt(e.target.value) || 0} : null)}
+          step="any"
+          value={settings?.grace_period_hours ?? ''} 
+          onChange={e => setSettings(s => s ? {...s, grace_period_hours: parseFloat(e.target.value) || 0} : null)}
         />
         <p className="form-hint">Extra time after MISSED before contacts get full instructions.</p>
       </div>

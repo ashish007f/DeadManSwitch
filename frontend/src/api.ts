@@ -104,6 +104,13 @@ export const api = {
       body: JSON.stringify({ display_name: displayName }),
     }),
   
+  updateFcmToken: (fcmToken: string) =>
+    request<{ phone: string; fcm_token: string }>('/auth/update-fcm-token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fcm_token: fcmToken }),
+    }),
+  
   me: () => request<User>('/me'),
 
   // Check-in

@@ -12,24 +12,24 @@ from app.domain.status import CheckInStatus
 
 class SettingsUpdate(BaseModel):
     """Settings update request (all fields optional)"""
-    checkin_interval_hours: int | None = None
-    missed_buffer_hours: int | None = None
-    grace_period_hours: int | None = None
+    checkin_interval_hours: float | None = None
+    missed_buffer_hours: float | None = None
+    grace_period_hours: float | None = None
     contacts: List[str] | None = None
 
 
 class SettingsResponse(BaseModel):
     """Settings response"""
-    checkin_interval_hours: int
-    missed_buffer_hours: int
-    grace_period_hours: int
+    checkin_interval_hours: float
+    missed_buffer_hours: float
+    grace_period_hours: float
     contacts: List[str] | None = None
 
 
 class CheckInRequest(BaseModel):
     """Check-in request - minimal payload, all fields optional"""
     # Optional testing field: create a check-in 'hours_ago' hours in the past
-    hours_ago: int | None = None
+    hours_ago: float | None = None
 
 
 class CheckInResponse(BaseModel):
@@ -44,7 +44,7 @@ class StatusResponse(BaseModel):
     status: CheckInStatus
     last_checkin: datetime | None
     hours_until_due: float
-    interval_hours: int
+    interval_hours: float
 
 
 class InstructionsResponse(BaseModel):

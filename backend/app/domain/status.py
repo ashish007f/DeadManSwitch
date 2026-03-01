@@ -19,9 +19,9 @@ class CheckInStatus(str, Enum):
 
 def compute_status(
     last_checkin: datetime | None,
-    interval_hours: int,
-    missed_buffer_hours: int = 1,
-    grace_period_hours: int = 24,
+    interval_hours: float,
+    missed_buffer_hours: float = 1.0,
+    grace_period_hours: float = 24.0,
 ) -> CheckInStatus:
     """
     Compute check-in status based on last check-in time and interval.
@@ -67,9 +67,9 @@ def compute_status(
 
 def hours_until_due(
     last_checkin: datetime | None,
-    interval_hours: int,
-    missed_buffer_hours: int = 1,
-    grace_period_hours: int = 24,
+    interval_hours: float,
+    missed_buffer_hours: float = 1.0,
+    grace_period_hours: float = 24.0,
 ) -> float:
     """
     Calculate hours remaining until check-in is due.
