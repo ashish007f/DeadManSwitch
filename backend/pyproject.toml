@@ -18,6 +18,9 @@ dependencies = [
     "phonenumbers>=9.0.24",
     "firebase-admin>=7.2.0",
     "pyjwt>=2.11.0",
+    "google-cloud-firestore>=2.15.0",
+    "google-auth>=2.27.0",
+    "mock-firestore>=0.11.0",
 ]
 [tool.pytest.ini_options]
 pythonpath = "."

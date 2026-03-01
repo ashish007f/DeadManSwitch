@@ -80,7 +80,7 @@ export function SettingsPanel({ onClose, onSaveSuccess }: SettingsPanelProps) {
         <label>Trusted Contacts</label>
         <input 
           type="text" 
-          placeholder="email or phone, comma separated"
+          placeholder="comma separated emails"
           value={settings?.contacts?.join(', ') || ''} 
           onChange={e => setSettings(s => s ? {...s, contacts: e.target.value.split(',').map(c => c.trim()).filter(Boolean)} : null)}
         />
@@ -89,12 +89,17 @@ export function SettingsPanel({ onClose, onSaveSuccess }: SettingsPanelProps) {
       <div className="form-group">
         <label>Emergency Instructions</label>
         <textarea 
-          rows={4}
-          placeholder="Instructions for your contacts..."
+          rows={6}
+          placeholder="Example: Bank name/branch/account no, PF details, Mutual Fund info, Locker location, etc."
           value={instructions}
           onChange={e => setInstructions(e.target.value)}
         />
-        <p className="form-hint">These will be sent only when the grace period expires.</p>
+        <p className="form-hint" style={{ color: 'var(--text-muted)' }}>
+          <strong>Important:</strong> Do NOT enter passwords or PINs here.
+        </p>
+        <p className="form-hint">
+          These details will be emailed to your trusted contacts ONLY if you miss your check-in and the grace period expires.
+        </p>
       </div>
 
       <div className="form-actions">

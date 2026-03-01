@@ -10,14 +10,9 @@ from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 import os
 
-from app.db.database import engine
-from app.db.schema import Base, init_db
 from app.config import settings
 from app.api import routes
 from app.scheduler.jobs import start_scheduler, stop_scheduler
-
-# Initialize database tables
-init_db()
 
 # Create FastAPI app
 app = FastAPI(

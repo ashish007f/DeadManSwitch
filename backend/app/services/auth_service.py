@@ -5,7 +5,7 @@ Orchestrates authentication workflows (Firebase verification, profile management
 Handles authentication business logic.
 """
 
-from sqlalchemy.orm import Session
+from google.cloud import firestore
 from app.repositories.auth_repo import AuthRepository
 from app.domain.auth_provider import verify_firebase_token
 from app.domain.security import create_access_token, create_refresh_token, decode_token
@@ -15,7 +15,7 @@ from datetime import datetime
 class AuthService:
     """Orchestrate authentication operations"""
     
-    def __init__(self, db: Session):
+    def __init__(self, db: firestore.Client):
         self.db = db
         self.auth_repo = AuthRepository(db)
     
@@ -32,9 +32,7 @@ class AuthService:
             return None
             
         user = self.auth_repo.get_or_create_user(phone)
-        user.verified = 1
-        user.last_login = datetime.utcnow()
-        self.db.commit()
+        self.auth_repo.update_last_login(phone)
         
         # Issue JWTs
         access_token = create_access_token(data={"sub": user.phone_number})
