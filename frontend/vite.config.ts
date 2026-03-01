@@ -7,13 +7,19 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.ts',
       registerType: 'autoUpdate',
+      injectManifest: {
+        injectionPoint: 'self.__WB_MANIFEST',
+      },
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
       manifest: {
         name: "I'mGood - Daily Safety Check",
         short_name: "I'mGood",
         description: "Check in daily to keep your loved ones informed.",
-        theme_color: '#2D5A27', // Use your "Safe Green"
+        theme_color: '#2D5A27',
         icons: [
           {
             src: 'pwa-192x192.png',

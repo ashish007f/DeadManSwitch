@@ -21,9 +21,9 @@ export interface CheckInResponse {
 }
 
 export interface SettingsResponse {
-  checkin_interval_hours: number;
-  missed_buffer_hours: number;
-  grace_period_hours: number;
+  checkin_interval_hours: number | null;
+  missed_buffer_hours: number | null;
+  grace_period_hours: number | null;
   contacts: string[];
 }
 
