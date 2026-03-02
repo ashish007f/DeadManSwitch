@@ -27,10 +27,11 @@ def normalize_phone(phone: str, default_region: str = "US") -> str:
 
 def hash_phone(normalized_phone: str) -> str:
     """
-    Generate a SHA-256 hash of the normalized phone number for privacy.
+    Generate a SHA-256 hash of the normalized phone number + salt for privacy.
     This is used as the primary identifier in the database.
     """
-    return hashlib.sha256(normalized_phone.encode()).hexdigest()
+    salted = f"{normalized_phone}{settings.phone_salt}"
+    return hashlib.sha256(salted.encode()).hexdigest()
 
 def secure_phone_identity(phone: str) -> Tuple[str, str]:
     """

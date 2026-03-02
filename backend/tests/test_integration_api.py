@@ -40,12 +40,13 @@ def authenticated_user(client, setup_test_db):
     
     # Ensure user exists in the mock DB
     from app.repositories.auth_repo import AuthRepository
+    from app.domain.security import secure_phone_identity
     auth_repo = AuthRepository(mock_db)
-    auth_repo.get_or_create_user(phone)
+    user = auth_repo.get_or_create_user_by_phone(phone)
     
-    # Create JWT
+    # Create JWT using the hash as 'sub'
     from app.domain.security import create_access_token
-    access_token = create_access_token(data={"sub": phone})
+    access_token = create_access_token(data={"sub": user.phone_hash})
     
     # Set the token on the client
     client.headers["Authorization"] = f"Bearer {access_token}"
@@ -208,11 +209,12 @@ class TestUserFlow:
         
         # 1. Ensure user exists in the mock DB
         from app.repositories.auth_repo import AuthRepository
-        AuthRepository(mock_db).get_or_create_user(phone)
+        from app.domain.security import secure_phone_identity
+        user = AuthRepository(mock_db).get_or_create_user_by_phone(phone)
 
-        # 2. Authenticate
+        # 2. Authenticate using hash
         from app.domain.security import create_access_token
-        access_token = create_access_token(data={"sub": phone})
+        access_token = create_access_token(data={"sub": user.phone_hash})
         client.headers["Authorization"] = f"Bearer {access_token}"
         
         # 3. Check-in
@@ -242,14 +244,15 @@ class TestErrorHandling:
         response = client.get("/api/invalid")
         assert response.status_code == 404
     
-    def test_me_endpoint_authenticated(self, authenticated_user):
-        """Test /me endpoint when authenticated"""
-        phone, client = authenticated_user
+        def test_me_endpoint_authenticated(self, authenticated_user):
+            """Test /me endpoint when authenticated"""
+            phone, client = authenticated_user
+            from app.domain.security import secure_phone_identity
+            _, p_hash = secure_phone_identity(phone)
         
-        response = client.get("/api/me")
-        assert response.status_code == 200
-        assert response.json()["phone"] == phone
-    
+            response = client.get("/api/me")
+            assert response.status_code == 200
+            assert response.json()["phone"] == p_hash    
     def test_me_endpoint_unauthenticated(self, client):
         """Test /me endpoint when not authenticated"""
         response = client.get("/api/me")

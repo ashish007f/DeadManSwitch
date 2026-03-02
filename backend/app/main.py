@@ -10,11 +10,16 @@ from fastapi.responses import FileResponse, RedirectResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi.errors import RateLimitExceeded
 import os
+import logging
 
 from app.config import settings
 from app.api import routes
 from app.scheduler.jobs import start_scheduler, stop_scheduler
 from app.limiter import limiter
+
+# Setup logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Custom rate limit handler
 def rate_limit_handler(request: Request, exc: RateLimitExceeded):
@@ -35,14 +40,14 @@ app = FastAPI(
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, rate_limit_handler)
 
-# Add CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # For development, allow all origins
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Add CORS middleware when allowed_origins is set (can be configured via ENV) and frontend is served from a different origin
+# app.add_middleware(
+#     CORSMiddleware,
+#     allow_origins=settings.allowed_origins,
+#     allow_credentials=True,
+#     allow_methods=["*"],
+#     allow_headers=["*"],
+# )
 
 # Include API routes
 app.include_router(routes.router)
@@ -52,8 +57,8 @@ base_dir = os.path.dirname(os.path.abspath(__file__))
 default_local_dist = os.path.abspath(os.path.join(base_dir, "..", "..", "frontend", "dist"))
 frontend_dist = settings.frontend_dist or os.getenv("FRONTEND_DIST", default_local_dist)
 
-print(f"📦 Serving frontend from: {frontend_dist}")
-print(f"📁 Exists: {os.path.exists(frontend_dist)}")
+logger.info(f"📦 Serving frontend from: {frontend_dist}")
+logger.info(f"📁 Exists: {os.path.exists(frontend_dist)}")
 
 # Serve React static files if frontend/dist exists
 if os.path.exists(frontend_dist):
@@ -74,7 +79,10 @@ if os.path.exists(frontend_dist):
 
     @app.get("/")
     async def serve_root():
-        return FileResponse(os.path.join(frontend_dist, "index.html"))
+        return FileResponse(
+            os.path.join(frontend_dist, "index.html"),
+            headers={"Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0"}
+        )
 
     # Fallback for React SPAs
     @app.get("/{full_path:path}")
@@ -84,12 +92,15 @@ if os.path.exists(frontend_dist):
         if os.path.isfile(file_path):
             return FileResponse(file_path)
         
-        # 2. Handle API 404s
-        if full_path == "api" or full_path.startswith("api/"):
+        # 2. Handle API 404s and missing assets
+        if full_path == "api" or full_path.startswith("api/") or full_path.startswith("assets/"):
             raise HTTPException(status_code=404, detail="Not Found")
             
         # 3. Default to index.html for all other routes (for client-side routing)
-        return FileResponse(os.path.join(frontend_dist, "index.html"))
+        return FileResponse(
+            os.path.join(frontend_dist, "index.html"),
+            headers={"Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0"}
+        )
 else:
     @app.get("/")
     async def root():
@@ -99,7 +110,7 @@ else:
 @app.on_event("startup")
 async def startup():
     """Initialize on app startup"""
-    print("📍 I'mGood Check-In starting...")
+    logger.info("📍 I'mGood Check-In starting...")
     start_scheduler()
 
 
@@ -107,7 +118,7 @@ async def startup():
 async def shutdown():
     """Cleanup on app shutdown"""
     stop_scheduler()
-    print("👋 I'mGood Check-In shutting down...")
+    logger.info("👋 I'mGood Check-In shutting down...")
 
 
 @app.get("/health")
@@ -122,5 +133,5 @@ if __name__ == "__main__":
         "app.main:app",
         host=settings.api_host,
         port=settings.api_port,
-        reload=True,
+        reload=False,
     )

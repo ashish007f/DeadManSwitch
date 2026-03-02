@@ -46,12 +46,12 @@ AuthServiceDep = Depends(get_auth_service)
 def checkin(
     request: Request,
     payload: CheckInRequest = None,
-    phone: str = Depends(get_current_user_phone),
+    p_hash: str = Depends(get_current_user_phone),
     service: CheckInService = CheckInServiceDep,
 ) -> CheckInResponse:
     """Record a check-in."""
     try:
-        return service.record_checkin(phone=phone, hours_ago=(payload.hours_ago if payload else None))
+        return service.record_checkin(p_hash=p_hash, hours_ago=(payload.hours_ago if payload else None))
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -60,12 +60,12 @@ def checkin(
 @limiter.limit(settings.rate_limit_general)
 def get_status(
     request: Request,
-    phone: str = Depends(get_current_user_phone),
+    p_hash: str = Depends(get_current_user_phone),
     service: CheckInService = CheckInServiceDep,
 ) -> StatusResponse:
     """Get current check-in status."""
     try:
-        return service.get_status(phone=phone)
+        return service.get_status(p_hash=p_hash)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -74,12 +74,12 @@ def get_status(
 @limiter.limit(settings.rate_limit_general)
 def get_settings(
     request: Request,
-    phone: str = Depends(get_current_user_phone),
+    p_hash: str = Depends(get_current_user_phone),
     service: CheckInService = CheckInServiceDep,
 ) -> SettingsResponse:
     """Get settings"""
     try:
-        return service.get_settings(phone=phone)
+        return service.get_settings(p_hash=p_hash)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -89,12 +89,12 @@ def get_settings(
 def update_settings(
     request: Request,
     update: SettingsUpdate,
-    phone: str = Depends(get_current_user_phone),
+    p_hash: str = Depends(get_current_user_phone),
     service: CheckInService = CheckInServiceDep,
 ) -> SettingsResponse:
     """Update settings"""
     try:
-        return service.update_settings(update, phone=phone)
+        return service.update_settings(update, p_hash=p_hash)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -103,12 +103,12 @@ def update_settings(
 @limiter.limit(settings.rate_limit_general)
 def get_instructions(
     request: Request,
-    phone: str = Depends(get_current_user_phone),
+    p_hash: str = Depends(get_current_user_phone),
     service: CheckInService = CheckInServiceDep,
 ) -> InstructionsResponse:
     """Get instructions"""
     try:
-        return service.get_instructions(phone=phone)
+        return service.get_instructions(p_hash=p_hash)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -118,12 +118,12 @@ def get_instructions(
 def save_instructions(
     request: Request,
     update: InstructionsUpdate,
-    phone: str = Depends(get_current_user_phone),
+    p_hash: str = Depends(get_current_user_phone),
     service: CheckInService = CheckInServiceDep,
 ) -> InstructionsResponse:
     """Save instructions"""
     try:
-        return service.save_instructions(update.content, phone=phone)
+        return service.save_instructions(update.content, p_hash=p_hash)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -169,38 +169,38 @@ async def logout(request: Request):
 async def update_display_name(
     request: Request,
     payload: dict,
-    phone: str = Depends(get_current_user_phone),
+    p_hash: str = Depends(get_current_user_phone),
     service: AuthService = AuthServiceDep,
 ):
     """Update user's display name"""
     display_name = payload.get("display_name")
     if not display_name:
         raise HTTPException(status_code=400, detail="display_name required")
-    return service.update_display_name(phone, display_name)
+    return service.update_display_name(p_hash, display_name)
 
 
 @router.post("/auth/update-fcm-token")
 async def update_fcm_token(
     request: Request,
     payload: dict,
-    phone: str = Depends(get_current_user_phone),
+    p_hash: str = Depends(get_current_user_phone),
     service: AuthService = AuthServiceDep,
 ):
     """Update user's FCM token"""
     fcm_token = payload.get("fcm_token")
     if not fcm_token:
         raise HTTPException(status_code=400, detail="fcm_token required")
-    return service.update_fcm_token(phone, fcm_token)
+    return service.update_fcm_token(p_hash, fcm_token)
 
 
 @router.get("/me")
 async def whoami(
     request: Request,
-    phone: str = Depends(get_current_user_phone),
+    p_hash: str = Depends(get_current_user_phone),
     service: AuthService = AuthServiceDep,
 ):
     """Get current authenticated user info"""
-    user = service.get_user_info(phone)
+    user = service.get_user_info(p_hash)
     if not user:
         raise HTTPException(status_code=401, detail="user not found")
     return user

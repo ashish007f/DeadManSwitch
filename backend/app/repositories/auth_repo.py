@@ -21,22 +21,23 @@ class AuthRepository:
         """Map Firestore dictionary to a SimpleNamespace for ORM-like attribute access"""
         return SimpleNamespace(**data)
 
-    def get_or_create_user(self, phone: str) -> SimpleNamespace:
-        """Get user by phone hash or create new user document"""
+    def get_or_create_user_by_phone(self, phone: str) -> SimpleNamespace:
+        """Get user by phone or create new user document (Initial Login)"""
         if not phone:
             raise ValueError("Phone number is required")
         
-        normalized, p_hash = secure_phone_identity(phone)
-        
-        # Identity is driven by phone_hash for privacy
+        _, p_hash = secure_phone_identity(phone)
+        return self.get_or_create_user_by_hash(p_hash)
+
+    def get_or_create_user_by_hash(self, p_hash: str) -> SimpleNamespace:
+        """Get or create user using the identity hash directly"""
         doc_ref = self.collection.document(p_hash)
         doc = doc_ref.get()
             
         if not doc.exists:
             user_data = {
-                "phone_number": normalized, 
                 "phone_hash": p_hash,
-                "display_name": normalized, 
+                "display_name": f"User_{p_hash[:8]}", 
                 "verified": 1,
                 "created_at": datetime.now(timezone.utc),
                 "fcm_token": None,
@@ -47,34 +48,26 @@ class AuthRepository:
                 
         return self._map_to_namespace(doc.to_dict())
 
-    def get_user_by_phone(self, phone: str) -> SimpleNamespace | None:
-        """Get user by phone hash"""
-        if not phone:
-            raise ValueError("Phone number is required")
-        
-        _, p_hash = secure_phone_identity(phone)
+    def get_user_by_hash(self, p_hash: str) -> SimpleNamespace | None:
+        """Get user by phone hash directly"""
         doc = self.collection.document(p_hash).get()
         if doc.exists:
             return self._map_to_namespace(doc.to_dict())
         return None
 
-    def update_display_name(self, phone: str, display_name: str) -> SimpleNamespace:
-        """Update user's display name"""
-        _, p_hash = secure_phone_identity(phone)
+    def update_display_name(self, p_hash: str, display_name: str) -> SimpleNamespace:
+        """Update user's display name using hash"""
         doc_ref = self.collection.document(p_hash)
-        
         doc_ref.update({"display_name": display_name})
         return self._map_to_namespace(doc_ref.get().to_dict())
 
-    def update_fcm_token(self, phone: str, fcm_token: str) -> SimpleNamespace:
-        """Update user's FCM token for push notifications"""
-        _, p_hash = secure_phone_identity(phone)
+    def update_fcm_token(self, p_hash: str, fcm_token: str) -> SimpleNamespace:
+        """Update user's FCM token using hash"""
         doc_ref = self.collection.document(p_hash)
-        
         doc_ref.update({"fcm_token": fcm_token})
         return self._map_to_namespace(doc_ref.get().to_dict())
         
-    def update_last_login(self, phone: str) -> None:
-        """Update last login timestamp"""
+    def update_last_login_by_phone(self, phone: str) -> None:
+        """Update last login timestamp by raw phone (Login)"""
         _, p_hash = secure_phone_identity(phone)
         self.collection.document(p_hash).update({"last_login": datetime.now(timezone.utc)})
