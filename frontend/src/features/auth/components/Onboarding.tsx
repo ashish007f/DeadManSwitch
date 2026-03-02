@@ -33,7 +33,7 @@ export function Onboarding({ onComplete }: { onComplete: () => void }) {
             <div className="feature-icon"><FileText size={20} /></div>
             <div className="feature-content">
               <h3>Secure Instructions</h3>
-              <p>Store helpful directions that only gets shared in an emergency. Do not store sensitive info like passwords, pin etc.</p>
+              <p>Store helpful directions that only gets shared in an emergency.</p>
             </div>
           </div>
         </div>

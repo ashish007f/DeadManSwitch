@@ -25,14 +25,21 @@ def initialize_firebase():
         sa_json = os.getenv("FIREBASE_SERVICE_ACCOUNT_JSON") or os.getenv("FIREBASE_SERVICE_ACCOUNT")
         if sa_json:
             try:
+                # Remove potential surrounding quotes and whitespace from shell cat
+                sa_json = sa_json.strip()
+                if sa_json.startswith("'") and sa_json.endswith("'"):
+                    sa_json = sa_json[1:-1]
+                
                 cred_dict = json.loads(sa_json)
                 cred = credentials.Certificate(cred_dict)
                 firebase_admin.initialize_app(cred)
                 _FIREBASE_INITIALIZED = True
                 print("✓ Firebase initialized from Environment Variable")
                 return True
-            except json.JSONDecodeError:
-                print("❌ Error: FIREBASE_SERVICE_ACCOUNT_JSON is not a valid JSON string.")
+            except json.JSONDecodeError as e:
+                print(f"❌ Error: FIREBASE_SERVICE_ACCOUNT_JSON is not a valid JSON string: {e}")
+                # Print first 20 chars for debugging (safely)
+                print(f"   Starts with: {sa_json[:20]}...")
             
         # 2. Try to load from a local file (for local development)
         sa_file = os.getenv("FIREBASE_SERVICE_ACCOUNT_FILE", "firebase-key.json")

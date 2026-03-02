@@ -34,8 +34,12 @@ app.add_middleware(
 app.include_router(routes.router)
 
 # Resolve frontend dist path
+# Default for local dev: ../../frontend/dist
+# Default for Docker: /frontend/dist (set via ENV)
 base_dir = os.path.dirname(os.path.abspath(__file__))
-frontend_dist = os.path.abspath(os.path.join(base_dir, "..", "..", "frontend", "dist"))
+default_dist = os.path.abspath(os.path.join(base_dir, "..", "..", "frontend", "dist"))
+frontend_dist = os.getenv("FRONTEND_DIST", default_dist)
+
 print(f"📦 Serving frontend from: {frontend_dist}")
 print(f"📁 Exists: {os.path.exists(frontend_dist)}")
 

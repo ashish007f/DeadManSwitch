@@ -22,8 +22,7 @@ def get_firestore_client() -> firestore.Client:
         return _db_client
         
     # Ensure Firebase is initialized
-    if not initialize_firebase():
-        raise RuntimeError("Failed to initialize Firebase before creating Firestore client")
+    initialize_firebase()
         
     # Create the client with credentials
     # 1. Try from environment variable JSON string
@@ -32,6 +31,12 @@ def get_firestore_client() -> firestore.Client:
         try:
             import json
             from google.oauth2 import service_account
+            
+            # Clean string
+            sa_json = sa_json.strip()
+            if sa_json.startswith("'") and sa_json.endswith("'"):
+                sa_json = sa_json[1:-1]
+                
             cred_dict = json.loads(sa_json)
             credentials = service_account.Credentials.from_service_account_info(cred_dict)
             _db_client = firestore.Client(credentials=credentials, project=cred_dict.get("project_id"))
