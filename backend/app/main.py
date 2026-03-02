@@ -8,18 +8,25 @@ from fastapi import FastAPI, Request, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 import os
 
 from app.config import settings
 from app.api import routes
 from app.scheduler.jobs import start_scheduler, stop_scheduler
+from app.limiter import limiter
 
 # Create FastAPI app
 app = FastAPI(
-    title="Dead-Man Check-In",
-    description="Local-first check-in system",
-    version="0.1.0",
+    title=settings.app_name,
+    description=settings.app_description,
+    version=settings.app_version,
 )
+
+# Add limiter to app state
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # Add CORS middleware
 app.add_middleware(
@@ -34,11 +41,9 @@ app.add_middleware(
 app.include_router(routes.router)
 
 # Resolve frontend dist path
-# Default for local dev: ../../frontend/dist
-# Default for Docker: /frontend/dist (set via ENV)
 base_dir = os.path.dirname(os.path.abspath(__file__))
-default_dist = os.path.abspath(os.path.join(base_dir, "..", "..", "frontend", "dist"))
-frontend_dist = os.getenv("FRONTEND_DIST", default_dist)
+default_local_dist = os.path.abspath(os.path.join(base_dir, "..", "..", "frontend", "dist"))
+frontend_dist = settings.frontend_dist or os.getenv("FRONTEND_DIST", default_local_dist)
 
 print(f"📦 Serving frontend from: {frontend_dist}")
 print(f"📁 Exists: {os.path.exists(frontend_dist)}")

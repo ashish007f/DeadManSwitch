@@ -5,19 +5,18 @@ import type {
   InstructionsResponse,
   User,
 } from './types';
-
-const API_BASE = '/api';
+import { API_BASE, STORAGE_KEYS } from './constants';
 
 // Token storage helpers
-const getAccessToken = () => localStorage.getItem('access_token');
-const getRefreshToken = () => localStorage.getItem('refresh_token');
+const getAccessToken = () => localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
+const getRefreshToken = () => localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
 const setTokens = (access: string, refresh: string) => {
-  localStorage.setItem('access_token', access);
-  localStorage.setItem('refresh_token', refresh);
+  localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, access);
+  localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refresh);
 };
 const clearTokens = () => {
-  localStorage.removeItem('access_token');
-  localStorage.removeItem('refresh_token');
+  localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
+  localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
 };
 
 async function request<T>(url: string, options?: RequestInit): Promise<T> {
