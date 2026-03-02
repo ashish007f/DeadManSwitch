@@ -1,4 +1,4 @@
-import { MapPin } from 'lucide-react';
+import { CheckCircle } from 'lucide-react';
 
 interface CheckInSectionProps {
   onCheckin: () => void;
@@ -6,11 +6,11 @@ interface CheckInSectionProps {
 
 export function CheckInSection({ onCheckin }: CheckInSectionProps) {
   return (
-    <section className="checkin-section">
-      <button className="btn-checkin" onClick={onCheckin}>
-        <MapPin size={24} />
-        Check In Now
+    <div className="checkin-action fade-in">
+      <button className="btn-primary btn-gradient btn-circle" onClick={onCheckin}>
+        <CheckCircle size={48} strokeWidth={2.5} />
+        <span style={{ fontSize: '18px', fontWeight: 800, marginTop: '4px' }}>I'm Good</span>
       </button>
-    </section>
+    </div>
   );
 }

@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { CheckCircle, Phone, ArrowRight } from 'lucide-react';
+import { CheckCircle, Phone, ArrowRight, ArrowLeft } from 'lucide-react';
 import { Spinner } from '../../../components/ui';
 
 interface LoginFormProps {
@@ -13,6 +13,7 @@ interface LoginFormProps {
   onSendOtp: () => void;
   onVerifyOtp: (code?: string) => void;
   onBackToPhone: () => void;
+  onBack: () => void;
 }
 
 export function LoginForm({
@@ -26,6 +27,7 @@ export function LoginForm({
   onSendOtp,
   onVerifyOtp,
   onBackToPhone,
+  onBack,
 }: LoginFormProps) {
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
 
@@ -49,22 +51,26 @@ export function LoginForm({
   };
 
   return (
-    <div className="login-container">
+    <div className="auth-container">
       <div id="recaptcha-container"></div>
-      <div className="auth-card">
-        <div className="auth-icon">
-          <CheckCircle size={40} color="var(--success)" />
+      <div className="card fade-in" style={{ textAlign: 'center' }}>
+        <div className="hero-icon green" style={{ margin: '0 auto 24px' }}>
+          <CheckCircle size={32} />
         </div>
         <h1>I'mGood</h1>
-        <p style={{ color: 'var(--text-muted)', marginBottom: '24px' }}>
+        <p style={{ marginTop: '8px', marginBottom: '32px' }}>
           Peace of mind with every check-in.
         </p>
 
-        {authError && <div className="alert alert-error">{authError}</div>}
+        {authError && (
+          <div style={{ background: '#fee2e2', color: '#ef4444', padding: '12px', borderRadius: '12px', marginBottom: '20px', fontSize: '13px', fontWeight: 500 }}>
+            {authError}
+          </div>
+        )}
 
         {authStep === 'phone' && (
-          <div className="auth-step">
-            <div className="form-group" style={{ textAlign: 'left' }}>
+          <div>
+            <div className="form-group">
               <label>Phone Number</label>
               <div style={{ position: 'relative' }}>
                 <Phone size={18} style={{ position: 'absolute', left: 14, top: 14, color: 'var(--text-muted)' }} />
@@ -76,25 +82,27 @@ export function LoginForm({
                   style={{ paddingLeft: 44 }}
                 />
               </div>
-              <p className="form-hint" style={{ marginTop: '8px' }}>Include country code (e.g. +91 for IND)</p>
+              <p style={{ fontSize: '11px', marginTop: '8px', color: 'var(--text-muted)' }}>
+                Include country code (e.g. +91)
+              </p>
             </div>
-            <button className="btn-checkin" onClick={onSendOtp} disabled={authLoading}>
+            <button className="btn-primary btn-gradient" onClick={onSendOtp} disabled={authLoading}>
               {authLoading ? <Spinner /> : (
                 <>Send Code <ArrowRight size={20} /></>
               )}
+            </button>
+            <button className="btn-secondary" onClick={onBack} style={{ marginTop: '16px' }}>
+              <ArrowLeft size={18} /> Learn more about I'mGood
             </button>
           </div>
         )}
 
         {authStep === 'otp' && (
-          <div className="auth-step">
-            <p style={{ fontSize: '14px', marginBottom: '8px' }}>
+          <div>
+            <p style={{ fontSize: '14px', marginBottom: '16px' }}>
               Code sent to <strong>{phoneInput}</strong>
             </p>
-            <button className="logout-btn" onClick={onBackToPhone} style={{ marginBottom: '20px', display: 'inline-block' }}>
-              Change number
-            </button>
-            <div className="otp-inputs">
+            <div className="otp-container">
               {otpInput.map((digit, idx) => (
                 <input
                   key={idx}
@@ -110,11 +118,14 @@ export function LoginForm({
               ))}
             </div>
             <button 
-              className="btn-checkin" 
+              className="btn-primary btn-gradient" 
               onClick={() => onVerifyOtp()}
               disabled={authLoading || otpInput.join('').length < 6}
             >
               {authLoading ? <Spinner /> : 'Verify Code'}
+            </button>
+            <button className="btn-secondary" onClick={onBackToPhone} style={{ marginTop: '16px' }}>
+              Change number
             </button>
           </div>
         )}

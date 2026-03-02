@@ -12,7 +12,9 @@ import { STORAGE_KEYS, AUTH_STEPS } from '../constants';
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [showOnboarding, setShowOnboarding] = useState(true);
+  const [showOnboarding, setShowOnboarding] = useState(() => {
+    return localStorage.getItem(STORAGE_KEYS.SHOW_ONBOARDING) !== 'false';
+  });
   
   const [authStep, setAuthStep] = useState<typeof AUTH_STEPS[keyof typeof AUTH_STEPS]>(AUTH_STEPS.PHONE);
   const [phoneInput, setPhoneInput] = useState('');

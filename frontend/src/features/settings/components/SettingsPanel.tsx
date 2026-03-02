@@ -90,15 +90,15 @@ export function SettingsPanel({ onClose, onSaveSuccess }: SettingsPanelProps) {
         <label>Emergency Instructions</label>
         <textarea 
           rows={6}
-          placeholder="Example: Bank name/branch/account no, PF details, Mutual Fund info, Locker location, etc."
+          placeholder="Example: Bank name/branch/account no, PF account, MF account, Locker location etc."
           value={instructions}
           onChange={e => setInstructions(e.target.value)}
         />
         <p className="form-hint" style={{ color: 'var(--text-muted)' }}>
-          <strong>Important:</strong> Do NOT enter passwords or PINs here.
+          <strong>Important:</strong> DO NOT store passwords here.
         </p>
         <p className="form-hint">
-          These details will be emailed to your trusted contacts ONLY if you miss your check-in and the grace period expires.
+          These details will be emailed to your contacts ONLY if you miss your check-in after the grace period expires.
         </p>
       </div>
 
