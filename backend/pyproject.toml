@@ -1,7 +1,7 @@
 [project]
 name = "deadmanswitch"
 version = "0.1.0"
-description = "Local-first Dead-Man Check-In system"
+description = "Local-first I'mGood Check-In system"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [

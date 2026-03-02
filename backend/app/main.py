@@ -99,7 +99,7 @@ else:
 @app.on_event("startup")
 async def startup():
     """Initialize on app startup"""
-    print("📍 Dead-Man Check-In starting...")
+    print("📍 I'mGood Check-In starting...")
     start_scheduler()
 
 
@@ -107,7 +107,7 @@ async def startup():
 async def shutdown():
     """Cleanup on app shutdown"""
     stop_scheduler()
-    print("👋 Dead-Man Check-In shutting down...")
+    print("👋 I'mGood Check-In shutting down...")
 
 
 @app.get("/health")

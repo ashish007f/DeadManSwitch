@@ -218,7 +218,7 @@ class CheckInScheduler:
             message = NotificationMessage(
                 subject="Please check on this person — missed check-in",
                 body="\n".join([
-                    "Dead-Man Switch — Check-in reminder",
+                    "I'mGood — Check-in reminder",
                     "",
                     f"The person associated with {phone} has not checked in within their expected interval.",
                     "",
@@ -229,9 +229,9 @@ class CheckInScheduler:
             )
         else:
             message = NotificationMessage(
-                subject="Dead-Man Switch — Important: instructions and sensitive information",
+                subject="I'mGood — Important: instructions and sensitive information",
                 body="\n".join([
-                    "Dead-Man Switch — Instructions for trusted contacts",
+                    "I'mGood — Instructions for trusted contacts",
                     "",
                     f"The person associated with {phone} has not checked in for an extended period.",
                     "The following information was provided for use by family members.",
