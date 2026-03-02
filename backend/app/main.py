@@ -6,9 +6,8 @@ Initializes database, routes, and scheduler.
 
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, RedirectResponse
+from fastapi.responses import FileResponse, RedirectResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 import os
 
@@ -16,6 +15,14 @@ from app.config import settings
 from app.api import routes
 from app.scheduler.jobs import start_scheduler, stop_scheduler
 from app.limiter import limiter
+
+# Custom rate limit handler
+def rate_limit_handler(request: Request, exc: RateLimitExceeded):
+    """Custom handler to return JSON instead of plain text"""
+    return JSONResponse(
+        status_code=429,
+        content={"detail": f"Rate limit exceeded: {exc.detail}"}
+    )
 
 # Create FastAPI app
 app = FastAPI(
@@ -26,7 +33,7 @@ app = FastAPI(
 
 # Add limiter to app state
 app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_exception_handler(RateLimitExceeded, rate_limit_handler)
 
 # Add CORS middleware
 app.add_middleware(
