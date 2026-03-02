@@ -13,23 +13,33 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
-const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
-
-// Messaging might not be supported in all environments (e.g. non-HTTPS)
+let app: any = null;
+let auth: any = null;
 let messaging: any = null;
+
 try {
-  messaging = getMessaging(app);
+  if (!firebaseConfig.apiKey) {
+    throw new Error('Firebase API Key is missing. Check your environment variables.');
+  }
+  app = initializeApp(firebaseConfig);
+  auth = getAuth(app);
+  
+  // Language for OTP SMS
+  auth.useDeviceLanguage();
+
+  try {
+    messaging = getMessaging(app);
+  } catch (err) {
+    console.warn('Firebase Messaging not supported in this browser:', err);
+  }
 } catch (err) {
-  console.warn('Firebase Messaging not supported in this browser:', err);
+  console.error('Failed to initialize Firebase:', err);
 }
 
-export { messaging };
-
-// Language for OTP SMS
-auth.useDeviceLanguage();
+export { auth, messaging };
 
 export const setupRecaptcha = (elementId: string) => {
+  if (!auth) return null;
   return new RecaptchaVerifier(auth, elementId, {
     size: 'invisible',
     callback: () => {

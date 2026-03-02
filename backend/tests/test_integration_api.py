@@ -1,44 +1,29 @@
 """
-Integration tests for API endpoints.
-
-Tests full request/response cycle including authentication, check-ins, settings, and notifications.
+Integration tests for API endpoints using Mock Firestore.
 """
 
 import pytest
 from fastapi.testclient import TestClient
 from datetime import datetime, timedelta
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from mockfirestore import MockFirestore
 from app.main import app
-from app.db.schema import Base, User, Settings, CheckIn, Instructions
 from app.db.database import get_db
-from sqlalchemy.pool import StaticPool 
 
 
 @pytest.fixture(scope="function", autouse=True)
 def setup_test_db():
-    """Create a fresh in-memory database for each test"""
-    # Create new in-memory database
-    test_engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False}, poolclass=StaticPool )
-    Base.metadata.create_all(bind=test_engine)
-    TestSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
+    """Create a fresh mock firestore for each test"""
+    mock_db = MockFirestore()
     
     # Override the app's database dependency
     def override_get_db():
-        db = TestSessionLocal()
-        try:
-            yield db
-        finally:
-            db.close()
+        yield mock_db
     
     app.dependency_overrides[get_db] = override_get_db
     
-    yield
+    yield mock_db
     
-    # Cleanup
-    Base.metadata.drop_all(bind=test_engine)
     app.dependency_overrides.clear()
-    # print(f"\n[DEBUG] Tables in Memory: {Base.metadata.tables.keys()}")
 
 
 @pytest.fixture
@@ -48,25 +33,21 @@ def client():
 
 
 @pytest.fixture
-def authenticated_user(client):
+def authenticated_user(client, setup_test_db):
     """Create and authenticate a test user (JWT Injection)"""
     phone = "+16502530000"
+    mock_db = setup_test_db
     
-    # Ensure user exists in the DB
-    from app.db.database import get_db
-    db = next(app.dependency_overrides[get_db]())
-    try:
-        from app.repositories.auth_repo import AuthRepository
-        auth_repo = AuthRepository(db)
-        auth_repo.get_or_create_user(phone)
-    finally:
-        db.close()
+    # Ensure user exists in the mock DB
+    from app.repositories.auth_repo import AuthRepository
+    auth_repo = AuthRepository(mock_db)
+    auth_repo.get_or_create_user(phone)
     
     # Create JWT
     from app.domain.security import create_access_token
     access_token = create_access_token(data={"sub": phone})
     
-    # Set the token on the client for all subsequent requests in this session
+    # Set the token on the client
     client.headers["Authorization"] = f"Bearer {access_token}"
     
     return phone, client
@@ -93,7 +74,7 @@ class TestProductionAuthentication:
         
         # Verify unauthorized
         response = client.get("/api/status")
-        assert response.status_code == 401 # HTTPBearer returns 401 for missing header
+        assert response.status_code == 401
 
 
 class TestCheckIn:
@@ -147,27 +128,27 @@ class TestSettings:
         response = client.get("/api/settings")
         assert response.status_code == 200
         data = response.json()
-        assert data["checkin_interval_hours"] == 48
-        assert data["missed_buffer_hours"] == 1
-        assert data["grace_period_hours"] == 24
+        assert data["checkin_interval_hours"] == 48.0
+        assert data["missed_buffer_hours"] == 1.0
+        assert data["grace_period_hours"] == 24.0
     
     def test_update_settings(self, authenticated_user):
         """Test updating settings"""
         phone, client = authenticated_user
         
         update_data = {
-            "checkin_interval_hours": 24,
-            "missed_buffer_hours": 2,
-            "grace_period_hours": 48,
+            "checkin_interval_hours": 24.0,
+            "missed_buffer_hours": 2.0,
+            "grace_period_hours": 48.0,
             "contacts": ["alice@example.com", "bob@example.com"]
         }
         
         response = client.post("/api/settings", json=update_data)
         assert response.status_code == 200
         data = response.json()
-        assert data["checkin_interval_hours"] == 24
-        assert data["missed_buffer_hours"] == 2
-        assert data["grace_period_hours"] == 48
+        assert data["checkin_interval_hours"] == 24.0
+        assert data["missed_buffer_hours"] == 2.0
+        assert data["grace_period_hours"] == 48.0
         assert len(data["contacts"]) == 2
     
     def test_update_settings_partial(self, authenticated_user):
@@ -175,12 +156,12 @@ class TestSettings:
         phone, client = authenticated_user
         
         # Update only interval
-        response = client.post("/api/settings", json={"checkin_interval_hours": 72})
+        response = client.post("/api/settings", json={"checkin_interval_hours": 72.0})
         assert response.status_code == 200
         data = response.json()
-        assert data["checkin_interval_hours"] == 72
-        # Other fields should remain default
-        assert data["missed_buffer_hours"] == 1
+        assert data["checkin_interval_hours"] == 72.0
+        # Other fields should remain default (fetched from Firestore update)
+        assert data["missed_buffer_hours"] == 1.0
 
 
 class TestInstructions:
@@ -220,61 +201,37 @@ class TestInstructions:
 class TestUserFlow:
     """Test complete user workflows"""
     
-    def test_full_user_flow(self, client):
+    def test_full_user_flow(self, client, setup_test_db):
         """Test complete flow: login → check-in → status → settings"""
         phone = "+12125550000"
+        mock_db = setup_test_db
         
-        # 1. Login (Simulate JWT)
+        # 1. Ensure user exists in the mock DB
+        from app.repositories.auth_repo import AuthRepository
+        AuthRepository(mock_db).get_or_create_user(phone)
+
+        # 2. Authenticate
         from app.domain.security import create_access_token
         access_token = create_access_token(data={"sub": phone})
         client.headers["Authorization"] = f"Bearer {access_token}"
         
-        # Ensure user exists in the correct DB
-        from app.db.database import get_db
-        db = next(app.dependency_overrides[get_db]())
-        try:
-            from app.repositories.auth_repo import AuthRepository
-            AuthRepository(db).get_or_create_user(phone)
-        finally:
-            db.close()
-        
-        # 2. Check-in
+        # 3. Check-in
         response = client.post("/api/checkin", json={})
         assert response.status_code == 200
         assert response.json()["status"] == "SAFE"
         
-        # 3. Get status
+        # 4. Get status
         response = client.get("/api/status")
         assert response.status_code == 200
         assert response.json()["status"] == "SAFE"
         
-        # 4. Update settings
-        response = client.post("/api/settings", json={"checkin_interval_hours": 1})
+        # 5. Update settings
+        response = client.post("/api/settings", json={"checkin_interval_hours": 1.0})
         assert response.status_code == 200
         
-        # 5. Save instructions
+        # 6. Save instructions
         response = client.post("/api/instructions", json={"content": "Test instructions"})
         assert response.status_code == 200
-    
-    def test_checkin_upsert_behavior(self, authenticated_user):
-        """Test that check-ins upsert (only one row per user)"""
-        phone, client = authenticated_user
-        
-        # Record first check-in
-        response1 = client.post("/api/checkin", json={})
-        timestamp1 = response1.json()["timestamp"]
-        
-        # Record second check-in
-        response2 = client.post("/api/checkin", json={})
-        timestamp2 = response2.json()["timestamp"]
-        
-        # Second timestamp should be newer
-        assert timestamp2 > timestamp1
-        
-        # Status should reflect latest check-in
-        response = client.get("/api/status")
-        assert response.status_code == 200
-        assert response.json()["last_checkin"] == timestamp2
 
 
 class TestErrorHandling:

@@ -1,0 +1,28 @@
+# Local development
+.git
+.gitignore
+.vscode/
+.idea/
+.DS_Store
+
+# Backend
+backend/.venv/
+backend/__pycache__/
+backend/.pytest_cache/
+backend/*.db
+backend/*.log
+backend/firebase-key.json
+backend/.env
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/*.local
+frontend/generate-icons.js
+
+# Build artifacts
+Dockerfile
+.dockerignore
+node_modules/
+dist/

@@ -10,6 +10,11 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     """Application settings from environment"""
     
+    # Project Metadata
+    app_name: str = "I'mGood"
+    app_description: str = "Local-first check-in system for daily safety"
+    app_version: str = "0.1.0"
+    
     # Database
     database_url: str = "sqlite:///./checkin.db"
     
@@ -20,6 +25,10 @@ class Settings(BaseSettings):
     api_host: str = "0.0.0.0"
     api_port: int = 8000
     
+    # Rate Limiting
+    rate_limit_auth: str = "5/minute"
+    rate_limit_general: str = "10/minute"
+    
     # Security
     secret_key: str = "dev-secret-key-change-in-production"
     jwt_algorithm: str = "HS256"
@@ -29,6 +38,9 @@ class Settings(BaseSettings):
     # Email notifications to trusted contacts
     resend_api_key: str = "test_api_key"
     resend_sender: str = "I'mGood <onboarding@resend.dev>"
+    
+    # Paths
+    frontend_dist: str = "" # Set via ENV in production
     
     class Config:
         env_file = ".env"

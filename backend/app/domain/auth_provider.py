@@ -8,33 +8,52 @@ _FIREBASE_INITIALIZED = False
 
 def initialize_firebase():
     global _FIREBASE_INITIALIZED
+    
+    # 0. Check if already initialized by this app or firebase_admin
     if _FIREBASE_INITIALIZED:
         return True
+    try:
+        firebase_admin.get_app()
+        _FIREBASE_INITIALIZED = True
+        return True
+    except ValueError:
+        pass # Not initialized yet
         
     try:
         # 1. Try to load from environment variable (JSON string)
-        # This is the safest way for production (e.g. Heroku, GCP, AWS)
-        sa_json = os.getenv("FIREBASE_SERVICE_ACCOUNT")
+        # This is the safest way for production (e.g. Fly.io, Heroku, Railway)
+        sa_json = os.getenv("FIREBASE_SERVICE_ACCOUNT_JSON") or os.getenv("FIREBASE_SERVICE_ACCOUNT")
         if sa_json:
-            cred_dict = json.loads(sa_json)
-            cred = credentials.Certificate(cred_dict)
-            firebase_admin.initialize_app(cred)
-            _FIREBASE_INITIALIZED = True
-            return True
+            try:
+                # Remove potential surrounding quotes and whitespace from shell cat
+                sa_json = sa_json.strip()
+                if sa_json.startswith("'") and sa_json.endswith("'"):
+                    sa_json = sa_json[1:-1]
+                
+                cred_dict = json.loads(sa_json)
+                cred = credentials.Certificate(cred_dict)
+                firebase_admin.initialize_app(cred)
+                _FIREBASE_INITIALIZED = True
+                print("✓ Firebase initialized from Environment Variable")
+                return True
+            except json.JSONDecodeError as e:
+                print(f"❌ Error: FIREBASE_SERVICE_ACCOUNT_JSON is not a valid JSON string: {e}")
+                # Print first 20 chars for debugging (safely)
+                print(f"   Starts with: {sa_json[:20]}...")
             
         # 2. Try to load from a local file (for local development)
-        # Point this to your downloaded service-account-key.json
         sa_file = os.getenv("FIREBASE_SERVICE_ACCOUNT_FILE", "firebase-key.json")
         if os.path.exists(sa_file):
             cred = credentials.Certificate(sa_file)
             firebase_admin.initialize_app(cred)
             _FIREBASE_INITIALIZED = True
+            print(f"✓ Firebase initialized from local file: {sa_file}")
             return True
             
-        print("Warning: Firebase not initialized. Missing FIREBASE_SERVICE_ACCOUNT.")
+        print("⚠ Warning: Firebase not initialized. Missing environment variable and local file.")
         return False
     except Exception as e:
-        print(f"Error initializing Firebase: {str(e)}")
+        print(f"❌ Error initializing Firebase: {str(e)}")
         return False
 
 def verify_firebase_token(id_token: str) -> dict | None:

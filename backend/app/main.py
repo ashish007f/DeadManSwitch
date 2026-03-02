@@ -6,25 +6,34 @@ Initializes database, routes, and scheduler.
 
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, RedirectResponse
+from fastapi.responses import FileResponse, RedirectResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi.errors import RateLimitExceeded
 import os
 
-from app.db.database import engine
-from app.db.schema import Base, init_db
 from app.config import settings
 from app.api import routes
 from app.scheduler.jobs import start_scheduler, stop_scheduler
+from app.limiter import limiter
 
-# Initialize database tables
-init_db()
+# Custom rate limit handler
+def rate_limit_handler(request: Request, exc: RateLimitExceeded):
+    """Custom handler to return JSON instead of plain text"""
+    return JSONResponse(
+        status_code=429,
+        content={"detail": f"Rate limit exceeded: {exc.detail}"}
+    )
 
 # Create FastAPI app
 app = FastAPI(
-    title="Dead-Man Check-In",
-    description="Local-first check-in system",
-    version="0.1.0",
+    title=settings.app_name,
+    description=settings.app_description,
+    version=settings.app_version,
 )
+
+# Add limiter to app state
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, rate_limit_handler)
 
 # Add CORS middleware
 app.add_middleware(
@@ -40,7 +49,9 @@ app.include_router(routes.router)
 
 # Resolve frontend dist path
 base_dir = os.path.dirname(os.path.abspath(__file__))
-frontend_dist = os.path.abspath(os.path.join(base_dir, "..", "..", "frontend", "dist"))
+default_local_dist = os.path.abspath(os.path.join(base_dir, "..", "..", "frontend", "dist"))
+frontend_dist = settings.frontend_dist or os.getenv("FRONTEND_DIST", default_local_dist)
+
 print(f"📦 Serving frontend from: {frontend_dist}")
 print(f"📁 Exists: {os.path.exists(frontend_dist)}")
 
@@ -88,7 +99,7 @@ else:
 @app.on_event("startup")
 async def startup():
     """Initialize on app startup"""
-    print("📍 Dead-Man Check-In starting...")
+    print("📍 I'mGood Check-In starting...")
     start_scheduler()
 
 
@@ -96,7 +107,7 @@ async def startup():
 async def shutdown():
     """Cleanup on app shutdown"""
     stop_scheduler()
-    print("👋 Dead-Man Check-In shutting down...")
+    print("👋 I'mGood Check-In shutting down...")
 
 
 @app.get("/health")

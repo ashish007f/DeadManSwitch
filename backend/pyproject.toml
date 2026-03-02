@@ -1,7 +1,7 @@
 [project]
 name = "deadmanswitch"
 version = "0.1.0"
-description = "Local-first Dead-Man Check-In system"
+description = "Local-first I'mGood Check-In system"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
@@ -18,6 +18,10 @@ dependencies = [
     "phonenumbers>=9.0.24",
     "firebase-admin>=7.2.0",
     "pyjwt>=2.11.0",
+    "google-cloud-firestore>=2.15.0",
+    "google-auth>=2.27.0",
+    "mock-firestore>=0.11.0",
+    "slowapi>=0.1.9"
 ]
 [tool.pytest.ini_options]
 pythonpath = "."

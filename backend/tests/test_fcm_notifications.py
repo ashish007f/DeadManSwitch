@@ -1,5 +1,5 @@
 from unittest.mock import patch, MagicMock
-from datetime import datetime
+from datetime import datetime, timezone
 from app.notifications.adapters.fcm import FCMNotificationAdapter
 from app.notifications.models import NotificationMessage, NotificationRecipient, StatusChangeEvent
 from app.domain.status import CheckInStatus
@@ -20,8 +20,8 @@ def test_fcm_notification_send(mock_send, mock_init_firebase):
     event = StatusChangeEvent(
         user_phone="5551112222",
         new_status=CheckInStatus.DUE_SOON,
-        last_checkin_at=datetime.utcnow(),
-        created_at=datetime.utcnow()
+        last_checkin_at=datetime.now(timezone.utc),
+        created_at=datetime.now(timezone.utc)
     )
     
     # Send notification
@@ -51,8 +51,8 @@ def test_fcm_notification_no_token(mock_send, mock_init_firebase):
     event = StatusChangeEvent(
         user_phone="5551112222",
         new_status=CheckInStatus.DUE_SOON,
-        last_checkin_at=datetime.utcnow(),
-        created_at=datetime.utcnow()
+        last_checkin_at=datetime.now(timezone.utc),
+        created_at=datetime.now(timezone.utc)
     )
     
     # Send notification with no token

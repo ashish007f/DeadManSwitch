@@ -1,4 +1,4 @@
-# Dead-Man Switch - Test Plan
+# I'mGood - Test Plan
 
 ## Test Scope
 

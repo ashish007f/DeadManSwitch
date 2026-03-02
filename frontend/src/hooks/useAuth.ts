@@ -7,13 +7,14 @@ import type { ConfirmationResult } from 'firebase/auth';
 import { auth, requestForToken, onMessageListener } from '../lib/firebase';
 import { api } from '../api';
 import type { User } from '../types';
+import { STORAGE_KEYS, AUTH_STEPS } from '../constants';
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [showOnboarding, setShowOnboarding] = useState(true);
   
-  const [authStep, setAuthStep] = useState<'phone' | 'otp' | 'profile'>('phone');
+  const [authStep, setAuthStep] = useState<typeof AUTH_STEPS[keyof typeof AUTH_STEPS]>(AUTH_STEPS.PHONE);
   const [phoneInput, setPhoneInput] = useState('');
   const [otpInput, setOtpInput] = useState(['', '', '', '', '', '']);
   const [displayNameInput, setDisplayNameInput] = useState('');
@@ -24,7 +25,7 @@ export function useAuth() {
   const recaptchaVerifier = useRef<RecaptchaVerifier | null>(null);
 
   const checkAuth = useCallback(async () => {
-    const hasToken = !!localStorage.getItem('refresh_token');
+    const hasToken = !!localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
     if (!hasToken) {
       setLoading(false);
       return;
@@ -45,7 +46,7 @@ export function useAuth() {
     try {
       await api.logout();
       setUser(null);
-      setAuthStep('phone');
+      setAuthStep(AUTH_STEPS.PHONE);
       setPhoneInput('');
       setOtpInput(['', '', '', '', '', '']);
     } catch (err) {
@@ -71,7 +72,7 @@ export function useAuth() {
 
       const result = await signInWithPhoneNumber(auth, phoneInput, recaptchaVerifier.current);
       setConfirmationResult(result);
-      setAuthStep('otp');
+      setAuthStep(AUTH_STEPS.OTP);
     } catch (err: any) {
       console.error(err);
       setAuthError(err.message || 'Failed to send code');
@@ -92,7 +93,7 @@ export function useAuth() {
       const userData = await api.verifyFirebase(idToken);
       
       if (!userData.display_name || userData.display_name === userData.phone) {
-        setAuthStep('profile');
+        setAuthStep(AUTH_STEPS.PROFILE);
       } else {
         setUser(userData);
       }

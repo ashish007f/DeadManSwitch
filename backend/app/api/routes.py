@@ -1,18 +1,16 @@
 """
-API routes for check-in and authentication endpoints.
-
-Clean separation:
-- Auth routes: /api/auth/* → AuthService → AuthRepository
-- Check-in routes: /api/* → CheckInService → CheckInRepository
+API routes for check-in and authentication endpoints using Cloud Firestore.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Response
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, Depends, HTTPException, Request
+from google.cloud import firestore
 
 from app.db.database import get_db
 from app.services.checkin_service import CheckInService
 from app.services.auth_service import AuthService
+from app.config import settings
 from app.api.auth_bearer import get_current_user_phone
+from app.limiter import limiter
 from app.domain.models import (
     CheckInRequest,
     CheckInResponse,
@@ -26,13 +24,13 @@ from app.domain.models import (
 router = APIRouter(prefix="/api", tags=["check-in"])
 
 
-def get_checkin_service(db: Session = Depends(get_db)) -> CheckInService:
-    """Dependency: Inject CheckInService with database session"""
+def get_checkin_service(db: firestore.Client = Depends(get_db)) -> CheckInService:
+    """Dependency: Inject CheckInService with Firestore client"""
     return CheckInService(db)
 
 
-def get_auth_service(db: Session = Depends(get_db)) -> AuthService:
-    """Dependency: Inject AuthService with database session"""
+def get_auth_service(db: firestore.Client = Depends(get_db)) -> AuthService:
+    """Dependency: Inject AuthService with Firestore client"""
     return AuthService(db)
 
 
@@ -44,16 +42,14 @@ AuthServiceDep = Depends(get_auth_service)
 # ============ CHECK-IN ENDPOINTS ============
 
 @router.post("/checkin", response_model=CheckInResponse)
-async def checkin(
+@limiter.limit(settings.rate_limit_general)
+def checkin(
+    request: Request,
     payload: CheckInRequest = None,
     phone: str = Depends(get_current_user_phone),
     service: CheckInService = CheckInServiceDep,
 ) -> CheckInResponse:
-    """
-    Record a check-in.
-    
-    Returns current status and hours remaining.
-    """
+    """Record a check-in."""
     try:
         return service.record_checkin(phone=phone, hours_ago=(payload.hours_ago if payload else None))
     except ValueError as e:
@@ -61,15 +57,13 @@ async def checkin(
 
 
 @router.get("/status", response_model=StatusResponse)
-async def get_status(
+@limiter.limit(settings.rate_limit_general)
+def get_status(
+    request: Request,
     phone: str = Depends(get_current_user_phone),
     service: CheckInService = CheckInServiceDep,
 ) -> StatusResponse:
-    """
-    Get current check-in status.
-    
-    Returns SAFE / DUE_SOON / MISSED along with timing info.
-    """
+    """Get current check-in status."""
     try:
         return service.get_status(phone=phone)
     except ValueError as e:
@@ -77,11 +71,13 @@ async def get_status(
 
 
 @router.get("/settings", response_model=SettingsResponse)
-async def get_settings(
+@limiter.limit(settings.rate_limit_general)
+def get_settings(
+    request: Request,
     phone: str = Depends(get_current_user_phone),
     service: CheckInService = CheckInServiceDep,
 ) -> SettingsResponse:
-    """Get current check-in interval setting for a user"""
+    """Get settings"""
     try:
         return service.get_settings(phone=phone)
     except ValueError as e:
@@ -89,12 +85,14 @@ async def get_settings(
 
 
 @router.post("/settings", response_model=SettingsResponse)
-async def update_settings(
+@limiter.limit(settings.rate_limit_general)
+def update_settings(
+    request: Request,
     update: SettingsUpdate,
     phone: str = Depends(get_current_user_phone),
     service: CheckInService = CheckInServiceDep,
 ) -> SettingsResponse:
-    """Update settings (interval, buffers, contacts)"""
+    """Update settings"""
     try:
         return service.update_settings(update, phone=phone)
     except ValueError as e:
@@ -102,11 +100,13 @@ async def update_settings(
 
 
 @router.get("/instructions", response_model=InstructionsResponse)
-async def get_instructions(
+@limiter.limit(settings.rate_limit_general)
+def get_instructions(
+    request: Request,
     phone: str = Depends(get_current_user_phone),
     service: CheckInService = CheckInServiceDep,
 ) -> InstructionsResponse:
-    """Get instructions for trusted contacts"""
+    """Get instructions"""
     try:
         return service.get_instructions(phone=phone)
     except ValueError as e:
@@ -114,12 +114,14 @@ async def get_instructions(
 
 
 @router.post("/instructions", response_model=InstructionsResponse)
-async def save_instructions(
+@limiter.limit(settings.rate_limit_general)
+def save_instructions(
+    request: Request,
     update: InstructionsUpdate,
     phone: str = Depends(get_current_user_phone),
     service: CheckInService = CheckInServiceDep,
 ) -> InstructionsResponse:
-    """Save/update instructions for trusted contacts"""
+    """Save instructions"""
     try:
         return service.save_instructions(update.content, phone=phone)
     except ValueError as e:
@@ -129,12 +131,9 @@ async def save_instructions(
 # ============ AUTHENTICATION ENDPOINTS ============
 
 @router.post("/auth/verify-firebase")
-async def verify_firebase(payload: dict, service: AuthService = AuthServiceDep):
-    """
-    (Production) Verify Firebase ID Token and authenticate user.
-    
-    Returns custom Access and Refresh tokens.
-    """
+@limiter.limit(settings.rate_limit_auth)
+async def verify_firebase(request: Request, payload: dict, service: AuthService = AuthServiceDep):
+    """Verify Firebase ID Token and authenticate user."""
     id_token = payload.get("id_token")
     if not id_token:
         raise HTTPException(status_code=400, detail="id_token required")
@@ -147,7 +146,8 @@ async def verify_firebase(payload: dict, service: AuthService = AuthServiceDep):
 
 
 @router.post("/auth/refresh")
-async def refresh_token(payload: dict, service: AuthService = AuthServiceDep):
+@limiter.limit(settings.rate_limit_auth)
+async def refresh_token(request: Request, payload: dict, service: AuthService = AuthServiceDep):
     """Exchange Refresh Token for a new Access Token"""
     refresh_token = payload.get("refresh_token")
     if not refresh_token:
@@ -161,13 +161,13 @@ async def refresh_token(payload: dict, service: AuthService = AuthServiceDep):
 
 
 @router.post("/auth/logout")
-async def logout():
-    """Client-side handles token clearing, this is for completeness"""
+async def logout(request: Request):
     return {"ok": True}
 
 
 @router.post("/auth/update-display-name")
 async def update_display_name(
+    request: Request,
     payload: dict,
     phone: str = Depends(get_current_user_phone),
     service: AuthService = AuthServiceDep,
@@ -181,11 +181,12 @@ async def update_display_name(
 
 @router.post("/auth/update-fcm-token")
 async def update_fcm_token(
+    request: Request,
     payload: dict,
     phone: str = Depends(get_current_user_phone),
     service: AuthService = AuthServiceDep,
 ):
-    """Update user's FCM token for push notifications"""
+    """Update user's FCM token"""
     fcm_token = payload.get("fcm_token")
     if not fcm_token:
         raise HTTPException(status_code=400, detail="fcm_token required")
@@ -194,6 +195,7 @@ async def update_fcm_token(
 
 @router.get("/me")
 async def whoami(
+    request: Request,
     phone: str = Depends(get_current_user_phone),
     service: AuthService = AuthServiceDep,
 ):

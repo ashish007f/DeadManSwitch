@@ -5,7 +5,7 @@ Pure domain logic - zero dependencies on FastAPI, DB, or external services.
 """
 
 from enum import Enum
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 
 class CheckInStatus(str, Enum):
@@ -45,7 +45,11 @@ def compute_status(
     if last_checkin is None:
         return CheckInStatus.MISSED
 
-    now = datetime.utcnow()
+    # Ensure last_checkin is timezone aware (Firestore returns aware, but tests might use naive)
+    if last_checkin.tzinfo is None:
+        last_checkin = last_checkin.replace(tzinfo=timezone.utc)
+
+    now = datetime.now(timezone.utc)
     elapsed_hours = (now - last_checkin).total_seconds() / 3600
 
     threshold_safe = 0.8 * interval_hours
@@ -86,7 +90,11 @@ def hours_until_due(
     if last_checkin is None:
         return 0.0
 
-    now = datetime.utcnow()
+    # Ensure last_checkin is timezone aware
+    if last_checkin.tzinfo is None:
+        last_checkin = last_checkin.replace(tzinfo=timezone.utc)
+
+    now = datetime.now(timezone.utc)
     elapsed_hours = (now - last_checkin).total_seconds() / 3600
 
     # If not yet due, show hours until interval
