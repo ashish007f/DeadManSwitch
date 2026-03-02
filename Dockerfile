@@ -50,5 +50,5 @@ ENV PYTHONUNBUFFERED=1
 ENV PORT=8080
 ENV FRONTEND_DIST=/app/frontend/dist
 
-# Run the server
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080"]
+# Run the server using the PORT variable provided by the environment
+CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT}

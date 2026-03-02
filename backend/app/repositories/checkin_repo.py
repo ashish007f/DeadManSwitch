@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 from google.cloud import firestore
 from types import SimpleNamespace
 from app.domain.security import secure_phone_identity
+from app.domain.encryption import encrypt_data, decrypt_data
 
 
 class FirestoreBaseRepository:
@@ -16,18 +17,17 @@ class FirestoreBaseRepository:
         self.db = db
         self.users_collection = self.db.collection("users")
 
-    def _get_user_ref(self, phone: str) -> firestore.DocumentReference:
-        """Get document reference for a user by phone hash"""
-        _, p_hash = secure_phone_identity(phone)
+    def _get_user_ref(self, p_hash: str) -> firestore.DocumentReference:
+        """Get document reference for a user by their identity hash"""
         return self.users_collection.document(p_hash)
 
 
 class SettingsRepository(FirestoreBaseRepository):
     """Manage application settings in Firestore"""
     
-    def get_or_create(self, phone: str) -> SimpleNamespace:
+    def get_or_create(self, p_hash: str) -> SimpleNamespace:
         """Get settings for a user, create defaults if not exists."""
-        user_ref = self._get_user_ref(phone)
+        user_ref = self._get_user_ref(p_hash)
         settings_ref = user_ref.collection("config").document("settings")
         doc = settings_ref.get()
         
@@ -41,18 +41,21 @@ class SettingsRepository(FirestoreBaseRepository):
             settings_ref.set(data)
             return SimpleNamespace(**data)
             
-        return SimpleNamespace(**doc.to_dict())
+        data = doc.to_dict()
+        if data.get("contacts"):
+            data["contacts"] = [decrypt_data(c) for c in data["contacts"]]
+        return SimpleNamespace(**data)
     
     def update_settings(
         self,
-        phone: str,
+        p_hash: str,
         checkin_interval_hours: float | None = None,
         missed_buffer_hours: float | None = None,
         grace_period_hours: float | None = None,
         contacts: list | None = None,
     ) -> SimpleNamespace:
         """Update one or more settings fields"""
-        user_ref = self._get_user_ref(phone)
+        user_ref = self._get_user_ref(p_hash)
         settings_ref = user_ref.collection("config").document("settings")
         
         update_data = {}
@@ -63,18 +66,23 @@ class SettingsRepository(FirestoreBaseRepository):
         if grace_period_hours is not None:
             update_data["grace_period_hours"] = float(grace_period_hours)
         if contacts is not None:
-            update_data["contacts"] = contacts
+            update_data["contacts"] = [encrypt_data(c) for c in contacts]
 
         if not settings_ref.get().exists:
             # Create with defaults first if doesn't exist
-            self.get_or_create(phone)
+            self.get_or_create(p_hash)
             
         settings_ref.update(update_data)
-        return SimpleNamespace(**settings_ref.get().to_dict())
+        
+        # Return decrypted version
+        data = settings_ref.get().to_dict()
+        if data.get("contacts"):
+            data["contacts"] = [decrypt_data(c) for c in data["contacts"]]
+        return SimpleNamespace(**data)
 
-    def read_settings(self, phone: str) -> dict:
+    def read_settings(self, p_hash: str) -> dict:
         """Return settings as a dict. Creates defaults if not exists."""
-        settings = self.get_or_create(phone)
+        settings = self.get_or_create(p_hash)
         return {
             "checkin_interval_hours": settings.checkin_interval_hours,
             "missed_buffer_hours": settings.missed_buffer_hours,
@@ -86,12 +94,12 @@ class SettingsRepository(FirestoreBaseRepository):
 class CheckInRepository(FirestoreBaseRepository):
     """Manage check-in records in Firestore"""
     
-    def record_checkin(self, phone: str, timestamp: datetime | None = None) -> SimpleNamespace:
+    def record_checkin(self, p_hash: str, timestamp: datetime | None = None) -> SimpleNamespace:
         """
         Record a check-in for a user.
         Phase 2 behavior: store only the most recent check-in.
         """
-        user_ref = self._get_user_ref(phone)
+        user_ref = self._get_user_ref(p_hash)
         checkin_ref = user_ref.collection("data").document("last_checkin")
         
         ts = timestamp or datetime.now(timezone.utc)
@@ -100,26 +108,26 @@ class CheckInRepository(FirestoreBaseRepository):
         
         return SimpleNamespace(**data)
     
-    def get_last_checkin(self, phone: str) -> SimpleNamespace | None:
+    def get_last_checkin(self, p_hash: str) -> SimpleNamespace | None:
         """Get the most recent check-in for a user"""
-        user_ref = self._get_user_ref(phone)
+        user_ref = self._get_user_ref(p_hash)
         doc = user_ref.collection("data").document("last_checkin").get()
         if doc.exists:
             return SimpleNamespace(**doc.to_dict())
         return None
     
-    def get_all_checkins(self, phone: str) -> list[SimpleNamespace]:
+    def get_all_checkins(self, p_hash: str) -> list[SimpleNamespace]:
         """Return at most one (the most recent) check-in for a user."""
-        last = self.get_last_checkin(phone)
+        last = self.get_last_checkin(p_hash)
         return [last] if last else []
 
 
 class InstructionsRepository(FirestoreBaseRepository):
     """Manage instructions for trusted contacts in Firestore"""
     
-    def get_or_create_instructions(self, phone: str) -> SimpleNamespace:
+    def get_or_create_instructions(self, p_hash: str) -> SimpleNamespace:
         """Get instructions for a user, create if not exists."""
-        user_ref = self._get_user_ref(phone)
+        user_ref = self._get_user_ref(p_hash)
         instr_ref = user_ref.collection("config").document("instructions")
         doc = instr_ref.get()
         
@@ -130,9 +138,9 @@ class InstructionsRepository(FirestoreBaseRepository):
             
         return SimpleNamespace(**doc.to_dict())
     
-    def update_content(self, content: str, phone: str) -> SimpleNamespace:
+    def update_content(self, content: str, p_hash: str) -> SimpleNamespace:
         """Update instructions content for a user"""
-        user_ref = self._get_user_ref(phone)
+        user_ref = self._get_user_ref(p_hash)
         instr_ref = user_ref.collection("config").document("instructions")
         
         data = {

@@ -42,12 +42,13 @@ def authenticated_user(client, setup_test_db):
     
     # Ensure user exists in the mock DB
     from app.repositories.auth_repo import AuthRepository
+    from app.domain.security import secure_phone_identity
     auth_repo = AuthRepository(mock_db)
-    auth_repo.get_or_create_user(phone)
+    user = auth_repo.get_or_create_user_by_phone(phone)
     
-    # Create JWT
+    # Create JWT using hash as 'sub'
     from app.domain.security import create_access_token
-    access_token = create_access_token(data={"sub": phone})
+    access_token = create_access_token(data={"sub": user.phone_hash})
     
     # Set the token on the client
     client.headers["Authorization"] = f"Bearer {access_token}"
@@ -55,40 +56,33 @@ def authenticated_user(client, setup_test_db):
     return phone, client
 
 def test_rate_limit_general_status(authenticated_user):
-    """Test that general endpoints are rate limited (default 10/minute)"""
+    """Test that general endpoints are rate limited (default 5/hour)"""
     phone, client = authenticated_user
     
-    # We should be able to make 10 requests
-    for i in range(10):
+    # We should be able to make 5 requests
+    for i in range(5):
         response = client.get("/api/status")
         assert response.status_code == 200, f"Request {i+1} failed"
     
-    # The 11th request should be rate limited
+    # The 6th request should be rate limited
     response = client.get("/api/status")
     assert response.status_code == 429
     assert "Rate limit exceeded" in response.json()["detail"]
 
 def test_rate_limit_auth_verify_firebase(client):
-    """Test that auth endpoints are more strictly rate limited (default 5/minute)"""
-    # We should be able to make 5 requests
-    # Note: We don't need a valid token for rate limiting to trigger, 
-    # as the limit is applied before the function logic.
-    # However, to avoid 401s getting in the way, we check 5/minute.
-    
-    for i in range(5):
-        # Even with invalid token, the limiter counts the attempt
+    """Test that auth endpoints are more strictly rate limited (default 3/hour)"""
+    for i in range(3):
         response = client.post("/api/auth/verify-firebase", json={"id_token": "some_token"})
-        # It should be 401 (Unauthorized) or 400, but NOT 429
         assert response.status_code != 429, f"Request {i+1} was prematurely rate limited"
     
-    # The 6th request should be rate limited
+    # The 4th request should be rate limited
     response = client.post("/api/auth/verify-firebase", json={"id_token": "some_token"})
     assert response.status_code == 429
     assert "Rate limit exceeded" in response.json()["detail"]
 
 def test_rate_limit_auth_refresh(client):
     """Test rate limiting on refresh token endpoint"""
-    for i in range(5):
+    for i in range(3):
         response = client.post("/api/auth/refresh", json={"refresh_token": "some_token"})
         assert response.status_code != 429
         
@@ -100,7 +94,7 @@ def test_rate_limit_reset_after_storage_clear(authenticated_user):
     phone, client = authenticated_user
     
     # Trigger rate limit
-    for _ in range(10):
+    for _ in range(5):
         client.get("/api/status")
     assert client.get("/api/status").status_code == 429
     

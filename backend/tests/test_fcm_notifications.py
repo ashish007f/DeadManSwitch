@@ -9,6 +9,8 @@ from app.domain.status import CheckInStatus
 def test_fcm_notification_send(mock_send, mock_init_firebase):
     # Mock firebase initialization
     mock_init_firebase.return_value = True
+    from app.domain.security import secure_phone_identity
+    _, p_hash = secure_phone_identity("+16502530000")
     
     # Mock successful send response
     mock_send.return_value = "projects/test-project/messages/123"
@@ -18,7 +20,7 @@ def test_fcm_notification_send(mock_send, mock_init_firebase):
     recipient = NotificationRecipient(channel="push", address="test-fcm-token")
     message = NotificationMessage(subject="Test Subject", body="Test Body")
     event = StatusChangeEvent(
-        user_phone="5551112222",
+        user_phone=p_hash,
         new_status=CheckInStatus.DUE_SOON,
         last_checkin_at=datetime.now(timezone.utc),
         created_at=datetime.now(timezone.utc)
@@ -35,7 +37,7 @@ def test_fcm_notification_send(mock_send, mock_init_firebase):
     assert fcm_message.notification.title == "Test Subject"
     assert fcm_message.notification.body == "Test Body"
     assert fcm_message.token == "test-fcm-token"
-    assert fcm_message.data["user_phone"] == "5551112222"
+    assert fcm_message.data["user_phone"] == p_hash
     assert fcm_message.data["new_status"] == CheckInStatus.DUE_SOON.value
 
 @patch("app.notifications.adapters.fcm.initialize_firebase")
@@ -43,13 +45,15 @@ def test_fcm_notification_send(mock_send, mock_init_firebase):
 def test_fcm_notification_no_token(mock_send, mock_init_firebase):
     # Mock firebase initialization
     mock_init_firebase.return_value = True
+    from app.domain.security import secure_phone_identity
+    _, p_hash = secure_phone_identity("+16502530000")
     
     adapter = FCMNotificationAdapter()
     
     recipient = NotificationRecipient(channel="push", address="")
     message = NotificationMessage(subject="Test Subject", body="Test Body")
     event = StatusChangeEvent(
-        user_phone="5551112222",
+        user_phone=p_hash,
         new_status=CheckInStatus.DUE_SOON,
         last_checkin_at=datetime.now(timezone.utc),
         created_at=datetime.now(timezone.utc)

@@ -141,9 +141,8 @@ export function useAuth() {
   useEffect(() => {
     if (user) {
       handleFcmToken();
-      onMessageListener().then((payload) => {
-        console.log('Foreground message received:', payload);
-        alert('Notification: ' + (payload as any)?.notification?.title);
+      onMessageListener().then(() => {
+        // Handle foreground notification (e.g., update local state or show custom UI)
       });
     }
   }, [user, handleFcmToken]);
