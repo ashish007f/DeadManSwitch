@@ -34,6 +34,7 @@ export function useSettings() {
         checkin_interval_hours: Number(settings.checkin_interval_hours) || 48,
         missed_buffer_hours: Number(settings.missed_buffer_hours) || 1,
         grace_period_hours: Number(settings.grace_period_hours) || 24,
+        contacts: (settings.contacts || []).map(c => c.trim()).filter(Boolean),
       };
 
       await Promise.all([

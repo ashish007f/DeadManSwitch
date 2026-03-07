@@ -4,6 +4,8 @@
 
 export const APP_NAME = "I'mGood";
 
+export const APP_VERSION = "0.1.1";
+
 export const API_BASE = import.meta.env.VITE_API_BASE || '/api';
 
 export const STORAGE_KEYS = {
