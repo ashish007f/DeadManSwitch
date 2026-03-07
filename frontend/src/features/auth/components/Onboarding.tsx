@@ -34,16 +34,16 @@ export function Onboarding({ onComplete }: OnboardingProps) {
         
         {/* STEP 1: KEY FEATURES */}
         {step === 1 && (
-          <div className="onboarding-step">
-            <div className="hero-icon green">
-              <CheckCircle size={32} />
+          <div className="onboarding-step" style={{ textAlign: 'center' }}>
+            <div className="hero-icon indigo" style={{ margin: '0 auto 24px' }}>
+              <img src="/icon.svg" alt="logo" style={{ width: '32px', height: '32px' }} />
             </div>
-            <h1>Welcome to I'mGood</h1>
+            <h1>I'mGood</h1>
             <p style={{ marginTop: '8px', marginBottom: '32px' }}>
               Simple, secure, and reliable safety system.
             </p>
 
-            <div className="list-vertical">
+            <div className="list-vertical" style={{ textAlign: 'left' }}>
               <div className="list-item">
                 <div className="list-item-icon"><Clock size={20} /></div>
                 <div className="item-content">
@@ -90,16 +90,16 @@ export function Onboarding({ onComplete }: OnboardingProps) {
 
         {/* STEP 2: HOW IT WORKS */}
         {step === 2 && (
-          <div className="onboarding-step">
-            <div className="hero-icon green">
-              <CheckCircle size={32} />
+          <div className="onboarding-step" style={{ textAlign: 'center' }}>
+            <div className="hero-icon indigo" style={{ margin: '0 auto 24px' }}>
+              <img src="/icon.svg" alt="logo" style={{ width: '32px', height: '32px' }} />
             </div>
             <h1>How it Works</h1>
             <p style={{ marginTop: '8px', marginBottom: '32px' }}>
               Simple daily safety for your peace of mind.
             </p>
 
-            <div className="steps-container">
+            <div className="steps-container" style={{ textAlign: 'left' }}>
               <div className="step-row">
                 <div className="step-dot">1</div>
                 <div className="item-content">

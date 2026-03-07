@@ -41,13 +41,13 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, rate_limit_handler)
 
 # Add CORS middleware when allowed_origins is set (can be configured via ENV) and frontend is served from a different origin
-# app.add_middleware(
-#     CORSMiddleware,
-#     allow_origins=settings.allowed_origins,
-#     allow_credentials=True,
-#     allow_methods=["*"],
-#     allow_headers=["*"],
-# )
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.allowed_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Include API routes
 app.include_router(routes.router)

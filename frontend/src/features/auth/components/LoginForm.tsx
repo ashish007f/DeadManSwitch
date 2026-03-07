@@ -54,8 +54,8 @@ export function LoginForm({
     <div className="auth-container">
       <div id="recaptcha-container"></div>
       <div className="card fade-in" style={{ textAlign: 'center' }}>
-        <div className="hero-icon green" style={{ margin: '0 auto 24px' }}>
-          <CheckCircle size={32} />
+        <div className="hero-icon indigo" style={{ margin: '0 auto 24px' }}>
+          <img src="/icon.svg" alt="logo" style={{ width: '32px', height: '32px' }} />
         </div>
         <h1>I'mGood</h1>
         <p style={{ marginTop: '8px', marginBottom: '32px' }}>

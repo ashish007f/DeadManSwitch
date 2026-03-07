@@ -166,7 +166,7 @@ input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(99, 102, 
 }
 
 .brand { display: flex; align-items: center; gap: 12px; }
-.brand h1 { font-size: 20px; color: var(--primary); margin: 0; }
+.brand h1 { font-size: 20px; color: var(--text); margin: 0; }
 
 .user-pill {
   display: flex;

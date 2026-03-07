@@ -12,7 +12,7 @@ export function Header({ user, onLogout }: HeaderProps) {
   return (
     <header className="app-header">
       <div className="brand">
-        <div className="hero-icon indigo" style={{ width: '36px', height: '36px', margin: 0, borderRadius: '10px' }}>
+        <div className="hero-icon indigo" style={{ width: '40px', height: '40px', margin: 0, borderRadius: '12px' }}>
           <img src="/icon.svg" alt="logo" style={{ width: '24px', height: '24px' }} />
         </div>
         <h1>I'mGood</h1>
