@@ -1,6 +1,7 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, RecaptchaVerifier } from 'firebase/auth';
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
+import { initializeAppCheck, ReCaptchaV3Provider } from 'firebase/app-check';
 
 // Replace these with your actual Firebase config
 // or use environment variables in Vite (.env.local)
@@ -16,6 +17,7 @@ const firebaseConfig = {
 let app: any = null;
 let auth: any = null;
 let messaging: any = null;
+let appCheck: any = null;
 
 try {
   if (!firebaseConfig.apiKey) {
@@ -24,6 +26,18 @@ try {
   app = initializeApp(firebaseConfig);
   auth = getAuth(app);
   
+  // Initialize App Check
+  // Note: VITE_RECAPTCHA_V3_SITE_KEY should be added to .env
+  const siteKey = import.meta.env.VITE_RECAPTCHA_V3_SITE_KEY || 'RECAPTCHA_V3_SITE_KEY_PLACEHOLDER';
+  
+  if (typeof window !== 'undefined') {
+    appCheck = initializeAppCheck(app, {
+      provider: new ReCaptchaV3Provider(siteKey),
+      isTokenAutoRefreshEnabled: true
+    });
+    console.log('✓ Firebase App Check initialized');
+  }
+
   // Language for OTP SMS
   auth.useDeviceLanguage();
 
@@ -36,7 +50,7 @@ try {
   console.error('Failed to initialize Firebase:', err);
 }
 
-export { auth, messaging };
+export { auth, messaging, appCheck };
 
 export const setupRecaptcha = (elementId: string) => {
   if (!auth) return null;

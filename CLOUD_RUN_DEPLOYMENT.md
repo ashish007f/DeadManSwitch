@@ -14,9 +14,9 @@ This guide explains how to deploy the I'mGood application to Google Cloud Run us
 Create a repository to store your Docker images:
 
 ```bash
-gcloud artifacts repositories create imgood-repo 
-    --repository-format=docker 
-    --location=us-central1 
+gcloud artifacts repositories create imgood-repo \
+    --repository-format=docker \
+    --location=us-central1 \
     --description="Docker repository for I'mGood app"
 ```
 
@@ -27,14 +27,15 @@ Build the image using **Google Cloud Build**. This is faster and handles the pus
 **Note:** You MUST replace the placeholders with your actual values from your `.env` file.
 
 ```bash
-gcloud builds submit --tag us-central1-docker.pkg.dev/YOUR_PROJECT_ID/imgood-repo/app:latest 
-  --build-arg VITE_FIREBASE_API_KEY=YOUR_KEY 
-  --build-arg VITE_FIREBASE_AUTH_DOMAIN=YOUR_PROJECT.firebaseapp.com 
-  --build-arg VITE_FIREBASE_PROJECT_ID=YOUR_PROJECT_ID 
-  --build-arg VITE_FIREBASE_STORAGE_BUCKET=YOUR_PROJECT.appspot.com 
-  --build-arg VITE_FIREBASE_MESSAGING_SENDER_ID=YOUR_SENDER_ID 
-  --build-arg VITE_FIREBASE_APP_ID=YOUR_APP_ID 
-  --build-arg VITE_FIREBASE_VAPID_KEY=YOUR_VAPID_KEY
+gcloud builds submit --tag us-central1-docker.pkg.dev/YOUR_PROJECT_ID/imgood-repo/app:latest \
+  --build-arg VITE_FIREBASE_API_KEY=YOUR_KEY \
+  --build-arg VITE_FIREBASE_AUTH_DOMAIN=YOUR_PROJECT.firebaseapp.com \
+  --build-arg VITE_FIREBASE_PROJECT_ID=YOUR_PROJECT_ID \
+  --build-arg VITE_FIREBASE_STORAGE_BUCKET=YOUR_PROJECT.appspot.com \
+  --build-arg VITE_FIREBASE_MESSAGING_SENDER_ID=YOUR_SENDER_ID \
+  --build-arg VITE_FIREBASE_APP_ID=YOUR_APP_ID \
+  --build-arg VITE_FIREBASE_VAPID_KEY=YOUR_VAPID_KEY \
+  --build-arg VITE_RECAPTCHA_V3_SITE_KEY=YOUR_RECAPTCHA_KEY
 ```
 
 ## 4. Deploy to Cloud Run
@@ -47,8 +48,8 @@ Assign a service account that has the `Cloud Datastore User` role so the app can
 gcloud iam service-accounts create imgood-runner
 
 # Grant Firestore access
-gcloud projects add-iam-policy-binding YOUR_PROJECT_ID 
-    --member="serviceAccount:imgood-runner@YOUR_PROJECT_ID.iam.gserviceaccount.com" 
+gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
+    --member="serviceAccount:imgood-runner@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
     --role="roles/datastore.user"
 ```
 
@@ -56,15 +57,16 @@ gcloud projects add-iam-policy-binding YOUR_PROJECT_ID
 Run the deployment command. Provide your runtime secrets (like Resend) here:
 
 ```bash
-gcloud run deploy imgood-service 
-  --image us-central1-docker.pkg.dev/YOUR_PROJECT_ID/imgood-repo/app:latest 
-  --service-account imgood-runner@YOUR_PROJECT_ID.iam.gserviceaccount.com 
-  --region us-central1 
-  --allow-unauthenticated 
-  --set-env-vars="SECRET_KEY=YOUR_JWT_SECRET" 
-  --set-env-vars="PHONE_SALT=YOUR_PHONE_SALT" 
-  --set-env-vars="RESEND_API_KEY=YOUR_RESEND_KEY" 
-  --set-env-vars="RESEND_SENDER=I'mGood <onboarding@resend.dev>" 
+gcloud run deploy imgood-service \
+  --image us-central1-docker.pkg.dev/YOUR_PROJECT_ID/imgood-repo/app:latest \
+  --service-account imgood-runner@YOUR_PROJECT_ID.iam.gserviceaccount.com \
+  --region us-central1 \
+  --allow-unauthenticated \
+  --set-env-vars="SECRET_KEY=YOUR_JWT_SECRET" \
+  --set-env-vars="PHONE_SALT=YOUR_PHONE_SALT" \
+  --set-env-vars="RESEND_API_KEY=YOUR_RESEND_KEY" \
+  --set-env-vars="RESEND_SENDER=I'mGood <onboarding@resend.dev>" \
+  --set-env-vars="ENFORCE_APP_CHECK=true" \
   --port 8080
 ```
 

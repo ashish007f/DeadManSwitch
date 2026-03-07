@@ -42,21 +42,22 @@ docker build
   --build-arg VITE_FIREBASE_PROJECT_ID=your_project_id 
   --build-arg VITE_FIREBASE_STORAGE_BUCKET=your_project.appspot.com 
   --build-arg VITE_FIREBASE_MESSAGING_SENDER_ID=123456789 
-  --build-arg VITE_FIREBASE_APP_ID=1:123456789:web:abcdef 
-  --build-arg VITE_FIREBASE_VAPID_KEY=your_vapid_key 
+  --build-arg VITE_FIREBASE_APP_ID=1:123456789:web:abcdef \
+  --build-arg VITE_FIREBASE_VAPID_KEY=your_vapid_key \
+  --build-arg VITE_RECAPTCHA_V3_SITE_KEY=your_recaptcha_key \
   -t imgood-app .
-```
+  ```
 
-Then run it:
-```bash
-docker run -p 8080:8080 --env-file .env imgood-app
-```
+  Then run it:
+  ```bash
+  docker run -p 8080:8080 --env-file .env imgood-app
+  ```
 
-### Using Docker Compose (Recommended)
-Create a `docker-compose.yml`:
+  ### Using Docker Compose (Recommended)
+  Create a `docker-compose.yml`:
 
-```yaml
-services:
+  ```yaml
+  services:
   app:
     build:
       context: .
@@ -68,8 +69,10 @@ services:
         - VITE_FIREBASE_MESSAGING_SENDER_ID=${VITE_FIREBASE_MESSAGING_SENDER_ID}
         - VITE_FIREBASE_APP_ID=${VITE_FIREBASE_APP_ID}
         - VITE_FIREBASE_VAPID_KEY=${VITE_FIREBASE_VAPID_KEY}
+        - VITE_RECAPTCHA_V3_SITE_KEY=${VITE_RECAPTCHA_V3_SITE_KEY}
     ports:
-      - "8080:8080"
+      - "${API_PORT:-8080}:8080"
+
     env_file:
       - .env
     restart: always

@@ -1,5 +1,5 @@
 import firebase_admin
-from firebase_admin import auth, credentials
+from firebase_admin import auth, credentials, app_check
 import os
 import json
 
@@ -55,6 +55,26 @@ def initialize_firebase():
     except Exception as e:
         print(f"❌ Error initializing Firebase: {str(e)}")
         return False
+
+def verify_app_check_token(app_check_token: str) -> bool:
+    """
+    Verifies the Firebase App Check token.
+    """
+    if not _FIREBASE_INITIALIZED:
+        if not initialize_firebase():
+            return False
+            
+    try:
+        app_check.verify_token(app_check_token)
+        return True
+    except Exception as e:
+        # For development or testing, you can choose to allow invalid tokens
+        # but in strict production mode, this would return False.
+        print(f"App Check verification failed: {str(e)}")
+        
+        # Determine if App Check should be enforced
+        enforce = os.getenv("ENFORCE_APP_CHECK", "false").lower() == "true"
+        return not enforce
 
 def verify_firebase_token(id_token: str) -> dict | None:
     """

@@ -53,9 +53,14 @@ class Settings(BaseSettings):
     # Paths
     frontend_dist: str = "" # Set via ENV in production
     
+    # App Check
+    enforce_app_check: bool = True
+    vite_recaptcha_v3_site_key: str = ""
+
     class Config:
         env_file = ".env"
         case_sensitive = False
+        extra = "ignore"
 
 
 settings = Settings()
