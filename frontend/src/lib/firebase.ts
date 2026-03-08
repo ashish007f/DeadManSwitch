@@ -31,17 +31,23 @@ try {
   const siteKey = import.meta.env.VITE_RECAPTCHA_V3_SITE_KEY || 'RECAPTCHA_V3_SITE_KEY_PLACEHOLDER';
   
   if (typeof window !== 'undefined') {
+    // Enable debug token for local testing
+    if (import.meta.env.DEV || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      (self as any).FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+    }
+
     appCheck = initializeAppCheck(app, {
       provider: new ReCaptchaV3Provider(siteKey),
       isTokenAutoRefreshEnabled: true
     });
-    console.log('✓ Firebase App Check initialized');
+    console.log('✓ Firebase App Check initialized (Debug mode if local)');
   }
 
   // Language for OTP SMS
   auth.useDeviceLanguage();
 
   try {
+    // VitePWA generates sw.js in the root of the output directory
     messaging = getMessaging(app);
   } catch (err) {
     console.warn('Firebase Messaging not supported in this browser:', err);

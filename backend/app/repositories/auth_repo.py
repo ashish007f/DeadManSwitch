@@ -26,8 +26,32 @@ class AuthRepository:
         if not phone:
             raise ValueError("Phone number is required")
         
-        _, p_hash = secure_phone_identity(phone)
-        return self.get_or_create_user_by_hash(p_hash)
+        from app.domain.encryption import encrypt_data
+        norm, p_hash = secure_phone_identity(phone)
+        
+        doc_ref = self.collection.document(p_hash)
+        doc = doc_ref.get()
+            
+        if not doc.exists:
+            user_data = {
+                "phone_hash": p_hash,
+                "encrypted_phone": encrypt_data(norm),
+                "display_name": f"User_{p_hash[:8]}", 
+                "verified": 1,
+                "created_at": datetime.now(timezone.utc),
+                "fcm_token": None,
+                "last_login": datetime.now(timezone.utc)
+            }
+            doc_ref.set(user_data)
+            return self._map_to_namespace(user_data)
+        
+        # Optionally update encrypted_phone if it's missing (migration)
+        data = doc.to_dict()
+        if "encrypted_phone" not in data:
+            data["encrypted_phone"] = encrypt_data(norm)
+            doc_ref.update({"encrypted_phone": data["encrypted_phone"]})
+                
+        return self._map_to_namespace(data)
 
     def get_or_create_user_by_hash(self, p_hash: str) -> SimpleNamespace:
         """Get or create user using the identity hash directly"""

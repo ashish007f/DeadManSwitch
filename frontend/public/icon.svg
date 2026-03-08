@@ -1,9 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
-  <!-- Rounded White Background -->
-  <rect width="512" height="512" rx="114" fill="#FFFFFF"/>
-  <!-- Centered Lucide Check Circle -->
-  <g transform="translate(64, 64) scale(16)">
-    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" fill="none" stroke="#2D5A27" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-    <polyline points="22 4 12 14.01 9 11.01" fill="none" stroke="#2D5A27" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Full Square Background for Maskable Icons -->
+  <rect width="512" height="512" fill="#FFFFFF"/>
+  <!-- Mathematically Centered Check Icon (Scale 12 of 24x24 = 288px. Offset = (512-288)/2 = 112) -->
+  <g transform="translate(112, 112) scale(12)">
+    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" fill="none" stroke="#2D5A27" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <polyline points="22 4 12 14.01 9 11.01" fill="none" stroke="#2D5A27" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
   </g>
 </svg>

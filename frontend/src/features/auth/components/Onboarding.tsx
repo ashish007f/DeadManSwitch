@@ -4,7 +4,6 @@ import {
   ArrowLeft,
   Clock, 
   Users, 
-  CheckCircle, 
   Shield, 
   Bell
 } from 'lucide-react';

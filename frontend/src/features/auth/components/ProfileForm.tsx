@@ -1,4 +1,4 @@
-import { CheckCircle, User as UserIcon } from 'lucide-react';
+import { User as UserIcon } from 'lucide-react';
 import { Spinner } from '../../../components/ui';
 
 interface ProfileFormProps {
