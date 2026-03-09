@@ -60,20 +60,21 @@ export function Onboarding({ onComplete }: OnboardingProps) {
               </div>
 
               <div className="list-item">
-                <div className="list-item-icon"><Shield size={20} /></div>
+                <div className="list-item-icon"><Bell size={20} /></div>
                 <div className="item-content">
-                  <h3>Privacy First</h3>
-                  <p>Your identity and instructions are AES-256 encrypted.</p>
+                  <h3>Emergency Instructions</h3>
+                  <p>Provide specific guidance for your contacts in case of an emergency.</p>
                 </div>
               </div>
 
               <div className="list-item">
-                <div className="list-item-icon"><Bell size={20} /></div>
+                <div className="list-item-icon"><Shield size={20} /></div>
                 <div className="item-content">
-                  <h3>Smart Reminders</h3>
-                  <p>Multiple notification layers ensure you never forget.</p>
+                  <h3>Privacy First</h3>
+                  <p>Your identity and instructions are encrypted.</p>
                 </div>
               </div>
+
             </div>
 
             <div style={{ marginTop: '40px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -94,9 +95,6 @@ export function Onboarding({ onComplete }: OnboardingProps) {
               <img src="/icon.svg" alt="logo" style={{ width: '32px', height: '32px' }} />
             </div>
             <h1>How it Works</h1>
-            <p style={{ marginTop: '8px', marginBottom: '32px' }}>
-              Simple daily safety for your peace of mind.
-            </p>
 
             <div className="steps-container" style={{ textAlign: 'left' }}>
               <div className="step-row">
@@ -139,7 +137,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
                 <div className="step-dot">5</div>
                 <div className="item-content">
                   <h3>Emergency</h3>
-                  <p>Still no word? We alert your contacts.</p>
+                  <p>Still no word? We alert your contacts with instructions.</p>
                 </div>
               </div>
             </div>

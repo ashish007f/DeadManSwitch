@@ -185,7 +185,7 @@ export function SettingsPanel({ onClose, onSaveSuccess }: SettingsPanelProps) {
                 End-to-End Encrypted
               </p>
               <p style={{ fontSize: '12px', margin: 0 }}>
-                Instructions & Contacts are encrypted before they leave your device.
+                Instructions & Contacts are encrypted.
               </p>
             </div>
           </div>

@@ -35,7 +35,11 @@ export function useAuth() {
 
     try {
       const data = await api.me();
-      setUser(data);
+      if (!data.display_name || data.display_name === data.phone || data.display_name.startsWith('User_')) {
+        setAuthStep(AUTH_STEPS.PROFILE);
+      } else {
+        setUser(data);
+      }
     } catch (err) {
       console.error('Auth check failed', err);
       setUser(null);
@@ -94,7 +98,7 @@ export function useAuth() {
       const idToken = await userCredential.user.getIdToken();
       const userData = await api.verifyFirebase(idToken);
       
-      if (!userData.display_name || userData.display_name === userData.phone) {
+      if (!userData.display_name || userData.display_name === userData.phone || userData.display_name.startsWith('User_')) {
         setAuthStep(AUTH_STEPS.PROFILE);
       } else {
         setUser(userData);
@@ -109,17 +113,17 @@ export function useAuth() {
   };
 
   const handleProfileSubmit = async () => {
+    if (!displayNameInput.trim()) {
+      setAuthError('Please enter a display name');
+      return;
+    }
+    
     setAuthLoading(true);
     try {
-      if (displayNameInput.trim()) {
-        const userData = await api.updateDisplayName(displayNameInput.trim());
-        setUser(userData);
-      } else {
-        const userData = await api.me();
-        setUser(userData);
-      }
+      const userData = await api.updateDisplayName(displayNameInput.trim());
+      setUser(userData);
     } catch (err: any) {
-      setAuthError(err.message);
+      setAuthError(err.message || 'Failed to update display name');
     } finally {
       setAuthLoading(false);
     }

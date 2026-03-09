@@ -20,7 +20,7 @@ export function Header({ user, onLogout }: HeaderProps) {
       
       <div className="user-profile">
         <div className="user-pill">
-          <span>{user.display_name}</span>
+          <span>{user.display_name && !user.display_name.startsWith('User_') ? user.display_name : (user.raw_phone || user.phone)}</span>
           <button onClick={onLogout} className="logout-btn-minimal" title="Logout">
             <LogOut size={16} />
           </button>

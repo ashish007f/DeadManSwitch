@@ -59,12 +59,12 @@ class InstructionsUpdate(BaseModel):
 
 
 class LoginRequest(BaseModel):
-    """Login request: username is unique id, display_name is optional"""
+    """Login request: username is unique id"""
     username: str
-    display_name: str | None = None
+    display_name: str
 
 
 class UserResponse(BaseModel):
     """User info response"""
     username: str
-    display_name: str | None = None
+    display_name: str

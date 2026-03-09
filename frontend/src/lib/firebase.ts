@@ -71,9 +71,14 @@ export const setupRecaptcha = (elementId: string) => {
 export const requestForToken = async () => {
   if (!messaging) return null;
   try {
+    // Get the existing service worker registration from the PWA plugin
+    const registration = await navigator.serviceWorker.getRegistration();
+    
     const currentToken = await getToken(messaging, {
       vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY,
+      serviceWorkerRegistration: registration
     });
+    
     if (currentToken) {
       return currentToken;
     } else {

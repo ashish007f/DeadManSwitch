@@ -88,7 +88,7 @@ class CheckInScheduler:
                 prev_status = self._last_status_by_phone.get(p_hash)
                 if prev_status != current_status:
                     timestamp = datetime.now(timezone.utc).isoformat()
-                    print(f"[{timestamp}] [{p_hash}] Status changed: {prev_status} → {current_status}")
+                    print(f"[{timestamp}] [{raw_phone}] Status changed: {prev_status} → {current_status}")
                     self._last_status_by_phone[p_hash] = current_status
 
                 if status_resp.last_checkin is None:
@@ -173,7 +173,7 @@ class CheckInScheduler:
                 body=f"URGENT: You missed your check-in for {raw_phone}! Please check in immediately to prevent your trusted contacts from being alerted.",
             )
 
-        print(f"📱 Sending self-reminder to {p_hash} (status={status})")
+        print(f"📱 Sending self-reminder to {raw_phone} (status={status})")
         
         event = StatusChangeEvent(
             user_phone=raw_phone,
