@@ -4,6 +4,7 @@ Background scheduler for check-in monitoring using Firestore.
 Runs periodic checks to evaluate status and log changes.
 """
 
+import logging
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.schedulers.base import SchedulerAlreadyRunningError
 from datetime import datetime, timezone
@@ -23,6 +24,8 @@ from app.notifications.models import (
     StatusChangeEvent,
 )
 
+# Silence APScheduler info/success logs
+logging.getLogger('apscheduler').setLevel(logging.WARNING)
 
 class CheckInScheduler:
     """Background scheduler for check-in status monitoring using Firestore"""

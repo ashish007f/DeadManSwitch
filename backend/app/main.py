@@ -121,12 +121,6 @@ async def shutdown():
     logger.info("👋 I'mGood Check-In shutting down...")
 
 
-@app.get("/health")
-async def health():
-    """Health check endpoint"""
-    return {"status": "ok"}
-
-
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(
