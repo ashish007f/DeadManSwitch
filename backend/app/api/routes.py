@@ -204,3 +204,9 @@ async def whoami(
     if not user:
         raise HTTPException(status_code=401, detail="user not found")
     return user
+
+
+@router.get("/health", tags=["system"])
+async def health():
+    """Health check endpoint"""
+    return {"status": "ok"}

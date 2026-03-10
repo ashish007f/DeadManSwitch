@@ -9,6 +9,7 @@ from google.cloud import firestore
 from app.repositories.auth_repo import AuthRepository
 from app.domain.auth_provider import verify_firebase_token
 from app.domain.security import create_access_token, create_refresh_token, decode_token
+from app.domain.encryption import decrypt_data
 from datetime import datetime
 
 
@@ -38,8 +39,11 @@ class AuthService:
         access_token = create_access_token(data={"sub": user.phone_hash})
         refresh_token = create_refresh_token(data={"sub": user.phone_hash})
         
+        raw_phone = decrypt_data(user.encrypted_phone) if hasattr(user, "encrypted_phone") else phone
+
         return {
-            "phone": user.phone_hash, # Frontend can treat hash as the ID
+            "phone": user.phone_hash, 
+            "raw_phone": raw_phone,
             "display_name": user.display_name,
             "access_token": access_token,
             "refresh_token": refresh_token
@@ -68,8 +72,10 @@ class AuthService:
             Dict with updated user info
         """
         user = self.auth_repo.update_display_name(p_hash, display_name)
+        raw_phone = decrypt_data(user.encrypted_phone) if hasattr(user, "encrypted_phone") else None
         return {
             "phone": user.phone_hash,
+            "raw_phone": raw_phone,
             "display_name": user.display_name
         }
 
@@ -96,8 +102,12 @@ class AuthService:
         user = self.auth_repo.get_user_by_hash(p_hash)
         if not user:
             return None
+        
+        raw_phone = decrypt_data(user.encrypted_phone) if hasattr(user, "encrypted_phone") else None
+        
         return {
             "phone": user.phone_hash,
+            "raw_phone": raw_phone,
             "display_name": user.display_name,
             "verified": bool(user.verified)
         }

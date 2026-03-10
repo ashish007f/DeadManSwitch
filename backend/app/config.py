@@ -35,8 +35,8 @@ class Settings(BaseSettings):
     api_port: int = 8000
     
     # Rate Limiting
-    rate_limit_auth: str = "3/hour"
-    rate_limit_general: str = "5/hour"
+    rate_limit_auth: str = "3/minute"
+    rate_limit_general: str = "5/minute"
     
     # Security
     # !!! GENERATE A NEW STRONG SECRET FOR PRODUCTION !!!
@@ -52,10 +52,11 @@ class Settings(BaseSettings):
     
     # Paths
     frontend_dist: str = "" # Set via ENV in production
-    
+
     class Config:
         env_file = ".env"
         case_sensitive = False
+        #extra = "ignore"
 
 
 settings = Settings()

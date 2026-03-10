@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { CheckCircle, Phone, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Phone, ArrowRight, ArrowLeft } from 'lucide-react';
 import { Spinner } from '../../../components/ui';
 
 interface LoginFormProps {

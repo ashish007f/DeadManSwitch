@@ -1,3 +1,5 @@
+import { getToken } from 'firebase/app-check';
+import { appCheck } from './lib/firebase';
 import type { 
   StatusResponse, 
   CheckInResponse, 
@@ -25,6 +27,16 @@ async function request<T>(url: string, options?: RequestInit): Promise<T> {
   const headers = new Headers(options?.headers);
   if (token) {
     headers.set('Authorization', `Bearer ${token}`);
+  }
+
+  // Fetch and attach Firebase App Check token
+  if (appCheck) {
+    try {
+      const appCheckTokenResponse = await getToken(appCheck, false);
+      headers.set('X-Firebase-AppCheck', appCheckTokenResponse.token);
+    } catch (err) {
+      console.warn('App Check failed to get token:', err);
+    }
   }
 
   let res = await fetch(`${API_BASE}${url}`, {

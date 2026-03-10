@@ -164,7 +164,7 @@ export function SettingsPanel({ onClose, onSaveSuccess }: SettingsPanelProps) {
         <div className="form-group">
           <textarea 
             rows={8}
-            placeholder="Example: Bank name/branch/account no, Locker location, insurance details, etc."
+            placeholder="Example: Bank,Locker,insurance, Investment details, etc. DO NOT include passwords or sensitive info."
             value={instructions}
             onChange={e => setInstructions(e.target.value)}
             style={{ fontSize: '15px', lineHeight: '1.6' }}
@@ -185,7 +185,7 @@ export function SettingsPanel({ onClose, onSaveSuccess }: SettingsPanelProps) {
                 End-to-End Encrypted
               </p>
               <p style={{ fontSize: '12px', margin: 0 }}>
-                Instructions & Contacts are encrypted before they leave your device.
+                Instructions & Contacts are encrypted.
               </p>
             </div>
           </div>

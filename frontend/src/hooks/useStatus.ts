@@ -48,7 +48,7 @@ export function useStatus(user: User | null) {
     let interval: number;
     if (user) {
       fetchStatus();
-      interval = window.setInterval(fetchStatus, 60000);
+      interval = window.setInterval(fetchStatus, 1*60*60*1000); // Poll every hour for production; change to 1 minute for demo
     }
     return () => clearInterval(interval);
   }, [user, fetchStatus]);

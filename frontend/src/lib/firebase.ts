@@ -1,6 +1,7 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, RecaptchaVerifier } from 'firebase/auth';
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
+import { initializeAppCheck, ReCaptchaV3Provider } from 'firebase/app-check';
 
 // Replace these with your actual Firebase config
 // or use environment variables in Vite (.env.local)
@@ -16,6 +17,7 @@ const firebaseConfig = {
 let app: any = null;
 let auth: any = null;
 let messaging: any = null;
+let appCheck: any = null;
 
 try {
   if (!firebaseConfig.apiKey) {
@@ -24,10 +26,28 @@ try {
   app = initializeApp(firebaseConfig);
   auth = getAuth(app);
   
+  // Initialize App Check
+  // Note: VITE_RECAPTCHA_V3_SITE_KEY should be added to .env
+  const siteKey = import.meta.env.VITE_RECAPTCHA_V3_SITE_KEY || 'RECAPTCHA_V3_SITE_KEY_PLACEHOLDER';
+  
+  if (typeof window !== 'undefined') {
+    // Enable debug token for local testing
+    if (import.meta.env.DEV || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      (self as any).FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+    }
+
+    appCheck = initializeAppCheck(app, {
+      provider: new ReCaptchaV3Provider(siteKey),
+      isTokenAutoRefreshEnabled: true
+    });
+    console.log('✓ Firebase App Check initialized (Debug mode if local)');
+  }
+
   // Language for OTP SMS
   auth.useDeviceLanguage();
 
   try {
+    // VitePWA generates sw.js in the root of the output directory
     messaging = getMessaging(app);
   } catch (err) {
     console.warn('Firebase Messaging not supported in this browser:', err);
@@ -36,7 +56,7 @@ try {
   console.error('Failed to initialize Firebase:', err);
 }
 
-export { auth, messaging };
+export { auth, messaging, appCheck };
 
 export const setupRecaptcha = (elementId: string) => {
   if (!auth) return null;
@@ -51,9 +71,14 @@ export const setupRecaptcha = (elementId: string) => {
 export const requestForToken = async () => {
   if (!messaging) return null;
   try {
+    // Get the existing service worker registration from the PWA plugin
+    const registration = await navigator.serviceWorker.getRegistration();
+    
     const currentToken = await getToken(messaging, {
       vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY,
+      serviceWorkerRegistration: registration
     });
+    
     if (currentToken) {
       return currentToken;
     } else {

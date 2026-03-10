@@ -1,9 +1,22 @@
 version: '3.8'
 
 services:
-  app:
+  api:
     build:
       context: .
+      dockerfile: Dockerfile.api
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./backend/firebase-key.json:/app/firebase-key.json
+    env_file:
+      - .env
+    restart: always
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
       args:
         - VITE_FIREBASE_API_KEY=${VITE_FIREBASE_API_KEY}
         - VITE_FIREBASE_AUTH_DOMAIN=${VITE_FIREBASE_AUTH_DOMAIN}
@@ -12,10 +25,9 @@ services:
         - VITE_FIREBASE_MESSAGING_SENDER_ID=${VITE_FIREBASE_MESSAGING_SENDER_ID}
         - VITE_FIREBASE_APP_ID=${VITE_FIREBASE_APP_ID}
         - VITE_FIREBASE_VAPID_KEY=${VITE_FIREBASE_VAPID_KEY}
+        - VITE_RECAPTCHA_V3_SITE_KEY=${VITE_RECAPTCHA_V3_SITE_KEY}
     ports:
-      - "${API_PORT:-8080}:8080"
-    volumes:
-      - ./backend/firebase-key.json:/app/firebase-key.json
-    env_file:
-      - .env
+      - "3000:80"
+    depends_on:
+      - api
     restart: always

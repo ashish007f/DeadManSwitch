@@ -1,4 +1,4 @@
-import { CheckCircle, User as UserIcon } from 'lucide-react';
+import { User as UserIcon } from 'lucide-react';
 import { Spinner } from '../../../components/ui';
 
 interface ProfileFormProps {
@@ -34,18 +34,23 @@ export function ProfileForm({
         )}
 
         <div className="form-group">
-          <label>Display Name (Optional)</label>
+          <label>Display Name</label>
           <div style={{ position: 'relative' }}>
             <UserIcon size={18} style={{ position: 'absolute', left: 14, top: 14, color: 'var(--text-muted)' }} />
             <input 
               type="text" 
-              placeholder="What's your name?" 
+              placeholder="Enter your name" 
               value={displayNameInput}
               onChange={e => setDisplayNameInput(e.target.value)}
               style={{ paddingLeft: 44 }}
+              required
             />
           </div>
+          <p style={{ fontSize: '11px', marginTop: '8px', color: 'var(--text-muted)' }}>
+            This name will be used in alerts sent to your contacts.
+          </p>
         </div>
+
         
         <button 
           className="btn-primary btn-gradient" 

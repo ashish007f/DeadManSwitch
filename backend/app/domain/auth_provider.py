@@ -1,5 +1,5 @@
 import firebase_admin
-from firebase_admin import auth, credentials
+from firebase_admin import auth, credentials, app_check
 import os
 import json
 
@@ -50,11 +50,44 @@ def initialize_firebase():
             print(f"✓ Firebase initialized from local file: {sa_file}")
             return True
             
+        # 3. Fallback to default credentials (works on GCP/Cloud Run)
+        try:
+            firebase_admin.initialize_app()
+            _FIREBASE_INITIALIZED = True
+            print("✓ Firebase initialized with Default Credentials (Ambient SA)")
+            return True
+        except Exception as e:
+            print(f"⚠ Warning: Firebase fallback failed: {e}")
+            
         print("⚠ Warning: Firebase not initialized. Missing environment variable and local file.")
         return False
     except Exception as e:
         print(f"❌ Error initializing Firebase: {str(e)}")
         return False
+
+def verify_app_check_token(app_check_token: str) -> bool:
+    """
+    Verifies the Firebase App Check token.
+    """
+    # Determine if App Check should be enforced
+    enforce = os.getenv("ENFORCE_APP_CHECK", "false").lower() == "true"
+
+    if not app_check_token:
+        if enforce:
+            print("❌ App Check token is missing and enforcement is ON.")
+            return False
+        return True # Allow if not enforced
+
+    if not _FIREBASE_INITIALIZED:
+        if not initialize_firebase():
+            return False
+            
+    try:
+        app_check.verify_token(app_check_token)
+        return True
+    except Exception as e:
+        print(f"App Check verification failed: {str(e)}")
+        return not enforce
 
 def verify_firebase_token(id_token: str) -> dict | None:
     """
