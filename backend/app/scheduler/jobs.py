@@ -17,7 +17,7 @@ from app.domain.status import CheckInStatus
 from app.repositories.notification_repo import NotificationLogRepository
 from app.notifications.adapters.console import ConsoleNotificationAdapter
 from app.notifications.adapters.fcm import FCMNotificationAdapter
-from app.notifications.adapters.resend import ResendEmailNotificationAdapter
+from app.notifications.adapters.smtp import SMTPNotificationAdapter
 from app.notifications.models import (
     NotificationMessage,
     NotificationRecipient,
@@ -36,7 +36,7 @@ class CheckInScheduler:
         self._last_status_by_phone: dict[str, CheckInStatus] = {}
         # Phase 2: pluggable adapter registry
         self._adapter_by_channel = {
-            "email": ResendEmailNotificationAdapter(),
+            "email": SMTPNotificationAdapter(),
             "sms": ConsoleNotificationAdapter(),
             "whatsapp": ConsoleNotificationAdapter(),
             "push": FCMNotificationAdapter(),
@@ -147,7 +147,7 @@ class CheckInScheduler:
                                 status=notify_status.value,
                             )
                         except Exception as e:
-                            print(f"⚠ Notification error for {p_hash}: {e}")
+                            print(f"⚠ Notification error for {raw_phone}: {e}")
             
         except Exception as e:
             print(f"⚠ Scheduler error: {e}")
@@ -257,7 +257,7 @@ class CheckInScheduler:
                 ]),
             )
 
-        print(f"🔔 Notifying {len(deduped)} recipients for {p_hash} (status={status})")
+        print(f"🔔 Notifying {len(deduped)} recipients for {raw_phone} (status={status})")
         for r in deduped:
             adapter = self._adapter_by_channel.get(r.channel, ConsoleNotificationAdapter())
             adapter.send(recipient=r, message=message, event=event)
