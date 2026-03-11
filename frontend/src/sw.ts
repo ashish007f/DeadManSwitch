@@ -32,13 +32,65 @@ try {
 
     onBackgroundMessage(messaging, (payload) => {
       console.log('[sw.ts] Received background message ', payload);
+      
       const notificationTitle = payload.notification?.title || 'Check-in Alert';
-      const notificationOptions = {
+      const notificationOptions: any = {
         body: payload.notification?.body,
-        icon: '/pwa-192x192.png'
+        icon: '/pwa-192x192.png',
+        data: payload.data, // Include custom data (like action: checkin)
+        actions: payload.data?.action === 'checkin' ? [
+          {
+            action: 'checkin-action',
+            title: 'I\'m Good (Check-in Now)',
+            icon: '/icon.svg'
+          }
+        ] : []
       };
 
       self.registration.showNotification(notificationTitle, notificationOptions);
+    });
+
+    // Handle notification click
+    self.addEventListener('notificationclick', (event: any) => {
+      event.notification.close();
+
+      if (event.action === 'checkin-action') {
+        // Option 1: Open the app and let it handle the check-in
+        const urlToOpen = new URL('/', self.location.origin).href;
+        
+        event.waitUntil(
+          self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+            .then((windowClients) => {
+              for (let i = 0; i < windowClients.length; i++) {
+                const client = windowClients[i];
+                if (client.url === urlToOpen && 'focus' in client) {
+                  return (client as any).focus().then((focusedClient: any) => {
+                    // Send a message to the focused client to trigger check-in
+                    focusedClient.postMessage({
+                      type: 'TRIGGER_CHECKIN'
+                    });
+                  });
+                }
+              }
+              if (self.clients.openWindow) {
+                return self.clients.openWindow(urlToOpen + '?action=checkin');
+              }
+            })
+        );
+      } else {
+        // Just focus/open the app for regular clicks
+        event.waitUntil(
+          self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+            .then((windowClients) => {
+              if (windowClients.length > 0) {
+                return (windowClients[0] as any).focus();
+              }
+              if (self.clients.openWindow) {
+                return self.clients.openWindow('/');
+              }
+            })
+        );
+      }
     });
   } else {
     console.warn('[sw.ts] Firebase config missing, background messaging disabled.');

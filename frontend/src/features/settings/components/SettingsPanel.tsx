@@ -163,7 +163,7 @@ export function SettingsPanel({ onClose, onSaveSuccess }: SettingsPanelProps) {
 
         <div className="form-group">
           <textarea 
-            rows={8}
+            rows={6}
             placeholder="Example: Bank,Locker,insurance, Investment details, etc. DO NOT include passwords or sensitive info."
             value={instructions}
             onChange={e => setInstructions(e.target.value)}

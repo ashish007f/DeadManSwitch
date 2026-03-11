@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from firebase_admin import messaging
 from app.notifications.adapters.base import NotificationAdapter
 from app.notifications.models import NotificationMessage, NotificationRecipient, StatusChangeEvent
@@ -22,7 +23,14 @@ class FCMNotificationAdapter(NotificationAdapter):
             print(f"FCM: No token for recipient {recipient.name or event.user_phone}")
             return
 
-        # recipient.address is the FCM token
+        # Web-specific configuration for actions
+        frontend_url = os.getenv("FRONTEND_URL", "https://imgood.web.app")
+        webpush_fcm_options = None
+        
+        # FCM requires HTTPS for the link property
+        if frontend_url.startswith("https://"):
+            webpush_fcm_options = messaging.WebpushFCMOptions(link=frontend_url)
+
         fcm_message = messaging.Message(
             notification=messaging.Notification(
                 title=message.subject,
@@ -33,7 +41,9 @@ class FCMNotificationAdapter(NotificationAdapter):
             data={
                 "user_phone": event.user_phone,
                 "new_status": event.new_status.value,
-            }
+                "action": "checkin"
+            },
+            webpush=messaging.WebpushConfig(fcm_options=webpush_fcm_options) if webpush_fcm_options else None
         )
 
         try:
