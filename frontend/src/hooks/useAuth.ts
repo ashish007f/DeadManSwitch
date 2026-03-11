@@ -70,11 +70,18 @@ export function useAuth() {
     setAuthError('');
     
     try {
-      if (!recaptchaVerifier.current) {
-        recaptchaVerifier.current = new RecaptchaVerifier(auth, 'recaptcha-container', {
-          size: 'invisible'
-        });
+      // Clear previous verifier if it exists to avoid stale state
+      if (recaptchaVerifier.current) {
+        recaptchaVerifier.current.clear();
+        recaptchaVerifier.current = null;
       }
+
+      recaptchaVerifier.current = new RecaptchaVerifier(auth, 'recaptcha-container', {
+        size: 'invisible'
+      });
+
+      // Pre-render the recaptcha to catch initialization errors early
+      await recaptchaVerifier.current.render();
 
       const result = await signInWithPhoneNumber(auth, phoneInput, recaptchaVerifier.current);
       setConfirmationResult(result);

@@ -45,10 +45,32 @@ export function useStatus(user: User | null) {
   };
 
   useEffect(() => {
+    // 1. Handle message from Service Worker
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data && event.data.type === 'TRIGGER_CHECKIN') {
+        console.log('[useStatus] Received TRIGGER_CHECKIN from SW');
+        handleCheckin();
+      }
+    };
+
+    // 2. Handle URL parameter (if app was opened fresh from notification)
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('action') === 'checkin' && user) {
+      console.log('[useStatus] URL action=checkin detected');
+      handleCheckin();
+      // Clean up URL
+      window.history.replaceState({}, document.title, "/");
+    }
+
+    navigator.serviceWorker.addEventListener('message', handleMessage);
+    return () => navigator.serviceWorker.removeEventListener('message', handleMessage);
+  }, [user, handleCheckin]);
+
+  useEffect(() => {
     let interval: number;
     if (user) {
       fetchStatus();
-      interval = window.setInterval(fetchStatus, 1*60*60*1000); // Poll every hour for production; change to 1 minute for demo
+      interval = window.setInterval(fetchStatus, 1*60*60*1000); // Poll every hour
     }
     return () => clearInterval(interval);
   }, [user, fetchStatus]);

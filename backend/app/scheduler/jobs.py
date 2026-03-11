@@ -23,6 +23,7 @@ from app.notifications.models import (
     NotificationRecipient,
     StatusChangeEvent,
 )
+from app.services.genai_service import GenAIService
 
 # Silence APScheduler info/success logs
 logging.getLogger('apscheduler').setLevel(logging.WARNING)
@@ -34,6 +35,7 @@ class CheckInScheduler:
         self.scheduler = BackgroundScheduler()
         self.check_interval_hours = check_interval_hrs
         self._last_status_by_phone: dict[str, CheckInStatus] = {}
+        self.genai = GenAIService()
         # Phase 2: pluggable adapter registry
         self._adapter_by_channel = {
             "email": SMTPNotificationAdapter(),
@@ -108,8 +110,8 @@ class CheckInScheduler:
                     if not already_reminded:
                         try:
                             self._send_self_reminder(
-                                p_hash=p_hash,
                                 raw_phone=raw_phone,
+                                display_name=user_data.get("display_name", "User"),
                                 fcm_token=user_data.get("fcm_token"),
                                 status=reminder_status,
                                 hours_until_due=status_resp.hours_until_due,
@@ -121,7 +123,7 @@ class CheckInScheduler:
                                 status=f"REMINDER_{reminder_status.value}",
                             )
                         except Exception as e:
-                            print(f"⚠ Reminder error for {p_hash}: {e}")
+                            print(f"⚠ Reminder error for {raw_phone}: {e}")
 
                 # Escalation notifications
                 for notify_status in (CheckInStatus.GRACE_PERIOD, CheckInStatus.NOTIFIED):
@@ -154,26 +156,47 @@ class CheckInScheduler:
     
     def _send_self_reminder(
         self,
-        p_hash: str,
         raw_phone: str,
+        display_name: str,
         fcm_token: Optional[str],
         status: CheckInStatus,
         hours_until_due: float,
         last_checkin_at: datetime,
     ):
-        """Send a reminder to the user themselves"""
+        """Send a reminder to the user themselves with adaptive tone"""
+        
+        # 1. Determine Urgency and Context for GenAI
         if status == CheckInStatus.DUE_SOON:
-            message = NotificationMessage(
-                subject="Check-in Reminder",
-                body=f"Hey! Your SAFE check-in for {raw_phone} is due in {abs(hours_until_due):.1f} hours. Please check in now to stay SAFE.",
-            )
-        else:  # MISSED
-            message = NotificationMessage(
-                subject="URGENT: Check-in Overdue",
-                body=f"URGENT: You missed your check-in for {raw_phone}! Please check in immediately to prevent your trusted contacts from being alerted.",
-            )
+            urgency = "GENTLE"
+            time_context = f"due in {abs(hours_until_due):.1f} hours"
+            subject = "Check-in Reminder"
+            fallback_body = f"Hey! Your SAFE check-in is due in {abs(hours_until_due):.1f} hours. Please check in now to stay SAFE."
+        elif status == CheckInStatus.MISSED:
+            urgency = "IMPORTANT"
+            subject = "URGENT: Check-in Missed"
+            time_context = f"overdue by {abs(hours_until_due):.1f} hours"
+            fallback_body = f"URGENT: You missed your check-in! Please check in immediately to prevent your trusted contacts from being notified."
+        else:  # GRACE_PERIOD
+            urgency = "CRITICAL"
+            subject = "CRITICAL: Check-in Overdue"
+            time_context = f"overdue by {abs(hours_until_due):.1f} hours (in grace period)"
+            fallback_body = f"Your SAFE check-in is overdue by {abs(hours_until_due):.1f} hours and currently in the grace period. Please check in immediately to avoid alerting your trusted contacts."
+            
+        # 2. Try to generate with GenAI
+        ai_body = self.genai.generate_reminder(
+            display_name=display_name,
+            urgency=urgency,
+            time_context=time_context
+        )
+        
+        final_body = ai_body if ai_body else fallback_body
+       
+        message = NotificationMessage(
+            subject=subject,
+            body=final_body,
+        )
 
-        print(f"📱 Sending self-reminder to {raw_phone} (status={status})")
+        print(f"📱 Sending {'(AI)' if ai_body else '(Fallback)'} self-reminder to {raw_phone} (status={status})")
         
         event = StatusChangeEvent(
             user_phone=raw_phone,
@@ -240,14 +263,14 @@ class CheckInScheduler:
             )
         else:
             message = NotificationMessage(
-                subject="I'mGood — Important: instructions and sensitive information",
+                subject="I'mGood — Important: instructions",
                 body="\n".join([
                     "I'mGood — Instructions for trusted contacts",
                     "",
                     f"The person associated with {raw_phone} has not checked in for an extended period.",
                     "The following information was provided for use by family members.",
                     "",
-                    "--- Instructions and sensitive information ---",
+                    "--- Instructions ---",
                     "",
                     (instructions.content or "(No instructions provided)"),
                     "",

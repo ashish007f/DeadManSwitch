@@ -17,3 +17,5 @@ slowapi==0.1.9
 cryptography==42.0.5
 
 pytest==7.4.0
+langchain-core
+langchain-google-genai
