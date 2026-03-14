@@ -52,9 +52,11 @@ def initialize_firebase():
             
         # 3. Fallback to default credentials (works on GCP/Cloud Run)
         try:
-            firebase_admin.initialize_app()
+            # Explicitly set project_id to ensure we match the frontend
+            project_id = os.getenv("FIRESTORE_PROJECT_ID")
+            firebase_admin.initialize_app(options={'projectId': project_id} if project_id else None)
             _FIREBASE_INITIALIZED = True
-            print("✓ Firebase initialized with Default Credentials (Ambient SA)")
+            print(f"✓ Firebase initialized with Default Credentials (Project: {project_id or 'Ambient'})")
             return True
         except Exception as e:
             print(f"⚠ Warning: Firebase fallback failed: {e}")
