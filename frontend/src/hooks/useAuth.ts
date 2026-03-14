@@ -55,6 +55,7 @@ export function useAuth() {
       setAuthStep(AUTH_STEPS.PHONE);
       setPhoneInput('');
       setOtpInput(['', '', '', '', '', '']);
+      fcmSynced.current = false;
     } catch (err) {
       console.error('Logout failed', err);
     }
@@ -109,6 +110,7 @@ export function useAuth() {
         setAuthStep(AUTH_STEPS.PROFILE);
       } else {
         setUser(userData);
+        handleFcmToken(); // Trigger on successful login
       }
     } catch (err: any) {
       console.error(err);
@@ -129,6 +131,7 @@ export function useAuth() {
     try {
       const userData = await api.updateDisplayName(displayNameInput.trim());
       setUser(userData);
+      handleFcmToken(); // Trigger after profile completion
     } catch (err: any) {
       setAuthError(err.message || 'Failed to update display name');
     } finally {
@@ -136,11 +139,16 @@ export function useAuth() {
     }
   };
 
+  const fcmSynced = useRef(false);
+
   const handleFcmToken = useCallback(async () => {
+    if (fcmSynced.current) return;
+    
     try {
       const token = await requestForToken();
       if (token) {
         await api.updateFcmToken(token);
+        fcmSynced.current = true;
       }
     } catch (err) {
       console.error('Failed to get FCM token', err);

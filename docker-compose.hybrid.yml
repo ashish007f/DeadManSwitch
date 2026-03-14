@@ -26,6 +26,7 @@ services:
         - VITE_FIREBASE_APP_ID=${VITE_FIREBASE_APP_ID}
         - VITE_FIREBASE_VAPID_KEY=${VITE_FIREBASE_VAPID_KEY}
         - VITE_RECAPTCHA_V3_SITE_KEY=${VITE_RECAPTCHA_V3_SITE_KEY}
+        - VITE_API_BASE=${VITE_API_BASE}
     ports:
       - "3000:80"
     depends_on:

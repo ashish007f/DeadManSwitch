@@ -62,8 +62,8 @@ export function useStatus(user: User | null) {
       window.history.replaceState({}, document.title, "/");
     }
 
-    navigator.serviceWorker.addEventListener('message', handleMessage);
-    return () => navigator.serviceWorker.removeEventListener('message', handleMessage);
+    navigator.serviceWorker?.addEventListener('message', handleMessage);
+    return () => navigator.serviceWorker?.removeEventListener('message', handleMessage);
   }, [user, handleCheckin]);
 
   useEffect(() => {

@@ -11,6 +11,7 @@ from app.services.auth_service import AuthService
 from app.config import settings
 from app.api.auth_bearer import get_current_user_phone
 from app.limiter import limiter
+from app.scheduler.jobs import _scheduler # Import global instance
 from app.domain.models import (
     CheckInRequest,
     CheckInResponse,
@@ -210,3 +211,19 @@ async def whoami(
 async def health():
     """Health check endpoint"""
     return {"status": "ok"}
+
+
+@router.post("/system/check-status", tags=["system"])
+async def trigger_system_check(request: Request):
+    """
+    Internal endpoint to trigger the check-in evaluation.
+    Called by Google Cloud Scheduler.
+    """
+    # Security check: Ensure it's called with the secret key
+    internal_secret = request.headers.get("X-Internal-Secret")
+    if not internal_secret or internal_secret != settings.secret_key:
+        raise HTTPException(status_code=403, detail="Forbidden: Invalid internal secret")
+    
+    # Trigger the check logic
+    _scheduler._check_status()
+    return {"status": "triggered"}

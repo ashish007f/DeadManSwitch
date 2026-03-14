@@ -1,3 +1,4 @@
+import os
 from fastapi import Request, HTTPException, Security
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from app.domain.security import decode_token
@@ -8,10 +9,12 @@ class JWTBearer(HTTPBearer):
         super(JWTBearer, self).__init__(auto_error=auto_error)
 
     async def __call__(self, request: Request):
-        # 1. Verify App Check token if present
-        app_check_token = request.headers.get("X-Firebase-AppCheck")
-        if not verify_app_check_token(app_check_token):
-            raise HTTPException(status_code=401, detail="Unauthorized app traffic.")
+        # 1. Verify App Check token if enforced
+        enforce = os.getenv("ENFORCE_APP_CHECK", "false").lower() == "true"
+        if enforce:
+            app_check_token = request.headers.get("X-Firebase-AppCheck")
+            if not verify_app_check_token(app_check_token):
+                raise HTTPException(status_code=401, detail="Unauthorized app traffic.")
 
         # 2. Verify JWT Bearer token
         credentials: HTTPAuthorizationCredentials = await super(JWTBearer, self).__call__(request)

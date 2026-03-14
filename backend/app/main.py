@@ -36,11 +36,7 @@ app = FastAPI(
     version=settings.app_version,
 )
 
-# Add limiter to app state
-app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, rate_limit_handler)
-
-# Add CORS middleware when allowed_origins is set (can be configured via ENV) and frontend is served from a different origin
+# 1. Add CORS middleware FIRST
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.allowed_origins,
@@ -48,6 +44,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# 2. Add limiter and other handlers
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, rate_limit_handler)
 
 # Include API routes
 app.include_router(routes.router)
@@ -111,7 +111,7 @@ else:
 async def startup():
     """Initialize on app startup"""
     logger.info("📍 I'mGood Check-In starting...")
-    start_scheduler()
+    #start_scheduler()
 
 
 @app.on_event("shutdown")

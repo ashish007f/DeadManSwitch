@@ -16,11 +16,12 @@ class GenAIService:
             self.llm = ChatGoogleGenerativeAI(
                 model=self.model_id,
                 google_api_key=self.api_key,
-                temperature=0.8, # More creative responses
-                timeout=10.0, # Fail fast if LLM is slow
-                max_retries=1  # Don't waste time on retries
+                temperature=0.8,
+                timeout=10.0, # Minimum allowed timeout
+                max_retries=0   # No retries to keep it fast
             )
         else:
+
             self.llm = None
 
     def generate_reminder(self, display_name: str, urgency: str, time_context: str) -> Optional[str]:

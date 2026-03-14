@@ -32,10 +32,14 @@ async function request<T>(url: string, options?: RequestInit): Promise<T> {
   // Fetch and attach Firebase App Check token
   if (appCheck) {
     try {
+      // Use forceRefresh=false to use cached token if available
       const appCheckTokenResponse = await getToken(appCheck, false);
-      headers.set('X-Firebase-AppCheck', appCheckTokenResponse.token);
+      if (appCheckTokenResponse && appCheckTokenResponse.token) {
+        headers.set('X-Firebase-AppCheck', appCheckTokenResponse.token);
+      }
     } catch (err) {
-      console.warn('App Check failed to get token:', err);
+      // Log but DON'T throw, so the API request can still try to proceed
+      console.warn('App Check token retrieval failed (non-blocking):', err);
     }
   }
 

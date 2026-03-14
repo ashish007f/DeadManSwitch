@@ -9,7 +9,6 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.schedulers.base import SchedulerAlreadyRunningError
 from datetime import datetime, timezone
 from typing import Optional
-from google.cloud import firestore
 
 from app.db.database import get_firestore_client
 from app.services.checkin_service import CheckInService
@@ -53,6 +52,8 @@ class CheckInScheduler:
                 hours=self.check_interval_hours,
                 id="check_checkin_status",
                 replace_existing=True,
+                misfire_grace_time=30, # Allow job to start up to 30s late
+                coalesce=True          # Combine missed runs
             )
             self.scheduler.start()
             print(f"✓ Scheduler started (checks every {self.check_interval_hours} hour(s))")
@@ -67,6 +68,9 @@ class CheckInScheduler:
     
     def _check_status(self):
         """Periodic check-in status evaluation"""
+        from app.domain.auth_provider import initialize_firebase
+        initialize_firebase()
+        
         db = get_firestore_client()
         try:
             service = CheckInService(db)
