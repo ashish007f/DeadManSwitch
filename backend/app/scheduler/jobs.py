@@ -101,7 +101,7 @@ class CheckInScheduler:
                     continue
 
                 # Reminders to the user themselves
-                for reminder_status in (CheckInStatus.DUE_SOON, CheckInStatus.MISSED):
+                for reminder_status in (CheckInStatus.DUE_SOON, CheckInStatus.MISSED, CheckInStatus.GRACE_PERIOD):
                     if current_status != reminder_status:
                         continue
                     
