@@ -32,13 +32,12 @@ class FCMNotificationAdapter(NotificationAdapter):
             webpush_fcm_options = messaging.WebpushFCMOptions(link=frontend_url)
 
         fcm_message = messaging.Message(
-            notification=messaging.Notification(
-                title=message.subject,
-                body=message.body,
-            ),
             token=recipient.address,
-            # Add some data for the app to handle if needed
+            # Move title/body to data to avoid browser auto-notification doubling
+            # with our custom service worker notification.
             data={
+                "title": message.subject,
+                "body": message.body,
                 "user_phone": event.user_phone,
                 "new_status": event.new_status.value,
                 "action": "checkin"

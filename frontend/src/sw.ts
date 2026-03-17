@@ -42,9 +42,10 @@ try {
     onBackgroundMessage(messaging, (payload) => {
       console.log('🔥🔥 [sw.ts] BACKGROUND MESSAGE RECEIVED:', JSON.stringify(payload));
       
-      const notificationTitle = payload.notification?.title || 'Check-in Alert';
+      // Use data if notification is missing (to prevent double-notify on web)
+      const notificationTitle = payload.notification?.title || payload.data?.title || 'Check-in Alert';
       const notificationOptions: any = {
-        body: payload.notification?.body || 'Your safety check-in is requested.',
+        body: payload.notification?.body || payload.data?.body || 'Your safety check-in is requested.',
         icon: '/pwa-192x192.png',
         badge: '/pwa-192x192.png',
         vibrate: [200, 100, 200],
