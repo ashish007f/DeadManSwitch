@@ -34,8 +34,9 @@ def test_fcm_notification_send(mock_send, mock_init_firebase):
     args, kwargs = mock_send.call_args
     fcm_message = args[0]
     
-    assert fcm_message.notification.title == "Test Subject"
-    assert fcm_message.notification.body == "Test Body"
+    # We use data for title/body on web to prevent double notification
+    assert fcm_message.data["title"] == "Test Subject"
+    assert fcm_message.data["body"] == "Test Body"
     assert fcm_message.token == "test-fcm-token"
     assert fcm_message.data["user_phone"] == p_hash
     assert fcm_message.data["new_status"] == CheckInStatus.DUE_SOON.value
