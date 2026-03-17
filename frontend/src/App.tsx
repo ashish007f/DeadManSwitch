@@ -8,7 +8,7 @@ import { useSwipe } from './hooks/useSwipe';
 import { STORAGE_KEYS } from './constants';
 
 // Components
-import { Spinner } from './components/ui';
+import { Spinner, InstallPrompt } from './components/ui';
 import { Header } from './components/shared/Header';
 import { Onboarding } from './features/auth/components/Onboarding';
 import { LoginForm } from './features/auth/components/LoginForm';
@@ -85,6 +85,7 @@ export default function App() {
             setShowOnboarding(false);
           }} 
         />
+        <InstallPrompt />
       </div>
     );
   }
@@ -116,6 +117,7 @@ export default function App() {
             onBack={() => setShowOnboarding(true)}
           />
         )}
+        <InstallPrompt />
       </div>
     );
   }
@@ -148,6 +150,8 @@ export default function App() {
             <SupportPanel />
           )}
         </main>
+
+        <InstallPrompt />
 
         {/* Bottom Navigation */}
         <nav className="bottom-nav">
