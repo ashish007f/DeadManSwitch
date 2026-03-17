@@ -33,6 +33,9 @@ class Settings(BaseSettings):
     # API
     api_host: str = "0.0.0.0"
     api_port: int = 8000
+
+    # App Check
+    enforce_app_check: bool = False
     
     # Rate Limiting
     rate_limit_auth: str = "3/minute"

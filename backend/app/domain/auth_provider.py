@@ -2,6 +2,7 @@ import firebase_admin
 from firebase_admin import auth, credentials, app_check
 import os
 import json
+from app.config import settings
 
 # Global variable to check if firebase is initialized
 _FIREBASE_INITIALIZED = False
@@ -72,7 +73,7 @@ def verify_app_check_token(app_check_token: str) -> bool:
     Verifies the Firebase App Check token.
     """
     # Determine if App Check should be enforced
-    enforce = os.getenv("ENFORCE_APP_CHECK", "false").lower() == "true"
+    enforce = settings.enforce_app_check
 
     if not app_check_token:
         if enforce:

@@ -29,8 +29,9 @@ try {
   // Initialize App Check
   // Note: VITE_RECAPTCHA_V3_SITE_KEY should be added to .env
   const siteKey = import.meta.env.VITE_RECAPTCHA_V3_SITE_KEY || 'RECAPTCHA_V3_SITE_KEY_PLACEHOLDER';
+  const enforceAppCheck = import.meta.env.VITE_ENFORCE_APP_CHECK === 'true';
   
-  if (typeof window !== 'undefined') {
+  if (typeof window !== 'undefined' && enforceAppCheck) {
     // Enable debug token for local testing
     if (import.meta.env.DEV || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
       (self as any).FIREBASE_APPCHECK_DEBUG_TOKEN = true;
