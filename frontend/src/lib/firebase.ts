@@ -29,7 +29,7 @@ try {
   // Initialize App Check
   // Note: VITE_RECAPTCHA_V3_SITE_KEY should be added to .env
   const siteKey = import.meta.env.VITE_RECAPTCHA_V3_SITE_KEY || 'RECAPTCHA_V3_SITE_KEY_PLACEHOLDER';
-  const enforceAppCheck = import.meta.env.VITE_ENFORCE_APP_CHECK === 'true';
+  const enforceAppCheck = import.meta.env.ENFORCE_APP_CHECK === 'true';
   
   if (typeof window !== 'undefined' && enforceAppCheck) {
     // Enable debug token for local testing
